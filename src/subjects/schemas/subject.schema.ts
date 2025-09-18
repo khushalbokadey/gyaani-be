@@ -5,22 +5,22 @@ export type SubjectDocument = Subject & Document;
 
 @Schema({ timestamps: true })
 export class Subject {
-  _id: Types.ObjectId;
+  _id!: Types.ObjectId;
 
   @Prop({ required: true, unique: true })
-  name: string;
+  name!: string;
 
   @Prop({ required: true })
-  color: string;
+  color!: string;
 
   @Prop({ default: 0 })
-  totalTopics: number;
+  totalTopics!: number;
 
   @Prop({ default: 0 })
-  completedTopics: number;
+  completedTopics!: number;
 
   @Prop({ default: 0 })
-  progress: number;
+  progress!: number;
 
   @Prop()
   description?: string;
@@ -30,7 +30,7 @@ export class Subject {
 
   // Change this to use the Topic schema directly
   @Prop({ type: [Object], default: [] })
-  topics: any[];
+  topics!: any[];
 }
 
 export const SubjectSchema = SchemaFactory.createForClass(Subject);

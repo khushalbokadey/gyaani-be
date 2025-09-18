@@ -6,31 +6,31 @@ export type TopicDocument = Topic & Document;
 @Schema({ timestamps: true })
 export class Topic {
   @Prop({ required: true })
-  name: string;
+  name!: string;
 
   @Prop({ required: true, ref: 'Subject' })
-  subjectId: Types.ObjectId;
+  subjectId!: Types.ObjectId;
 
   @Prop({ default: 0 })
-  progress: number;
+  progress!: number;
 
   @Prop({ required: true })
-  difficulty: string; // Easy, Medium, Hard
+  difficulty!: string; // Easy, Medium, Hard
 
   @Prop({ required: true })
-  estimatedTime: string;
+  estimatedTime!: string;
 
   @Prop({ default: 0 })
-  totalLessons: number;
+  totalLessons!: number;
 
   @Prop({ default: 0 })
-  completedLessons: number;
+  completedLessons!: number;
 
   @Prop({ default: 0 })
-  totalQuestions: number;
+  totalQuestions!: number;
 
   @Prop({ default: false })
-  isLocked: boolean;
+  isLocked!: boolean;
 
   @Prop()
   description?: string;

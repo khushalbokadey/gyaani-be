@@ -3,11 +3,11 @@ import { IsString, IsNotEmpty, IsOptional, IsHexColor } from 'class-validator';
 export class CreateSubjectDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsString()
   @IsHexColor()
-  color: string;
+  color!: string;
 
   @IsString()
   @IsOptional()

@@ -45,6 +45,11 @@ lerna-debug.log*
 # Cursor AI rules
 .cursorrules.md
 
+# Documentation files for team integration
+REACT_NATIVE_INTEGRATION.md
+QUICK_REFERENCE.md
+universal-backend-standards.md
+
 # temp directory
 .temp
 .tmp

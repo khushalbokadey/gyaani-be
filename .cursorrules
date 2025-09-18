@@ -1,0 +1,1136 @@
+# Backend Development Rules & Standards for Gyaani App
+
+## 🎯 Universal Architecture Principles (MANDATORY)
+
+### Core Fundamentals (Framework Independent)
+These principles apply regardless of the framework or technology stack:
+
+#### 1. Separation of Concerns
+```
+┌─────────────────┐    Request Flow    ┌─────────────────┐
+│   Presentation  │ ──────────────────→ │   Business      │
+│   Layer         │                     │   Logic Layer   │
+└─────────────────┘                     └─────────────────┘
+                                                │
+                                                ▼
+┌─────────────────┐    Data Flow       ┌─────────────────┐
+│   Data Access   │ ←────────────────── │   Data Storage  │
+│   Layer         │                     │   Layer         │
+└─────────────────┘                     └─────────────────┘
+```
+
+#### 2. Dependency Inversion
+- High-level modules don't depend on low-level modules
+- Both depend on abstractions
+- Abstractions don't depend on details
+
+#### 3. Single Responsibility
+- Each module has one reason to change
+- Each class has one responsibility
+- Each function does one thing
+
+#### 4. Open/Closed Principle
+- Open for extension
+- Closed for modification
+- Use interfaces and abstractions
+
+## 🏗️ Layered Architecture Implementation (MANDATORY)
+
+### Universal Layer Responsibilities
+
+#### 1. Presentation Layer
+**Purpose**: Handle external communication
+**Responsibilities**:
+- HTTP request/response handling
+- Input validation
+- Authentication/authorization
+- Response serialization
+
+#### 2. Application Layer
+**Purpose**: Orchestrate use cases
+**Responsibilities**:
+- Business workflow coordination
+- Transaction management
+- Event publishing
+- Use case execution
+
+#### 3. Domain Layer
+**Purpose**: Core business logic
+**Responsibilities**:
+- Business rules
+- Domain models
+- Domain services
+- Business validation
+
+#### 4. Infrastructure Layer
+**Purpose**: External system integration
+**Responsibilities**:
+- Database operations
+- External API calls
+- File system operations
+- Message queuing
+
+### Layer Communication Rules
+```
+┌─────────────────┐
+│  Presentation   │
+└─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Application    │
+└─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│    Domain       │
+└─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Infrastructure  │
+└─────────────────┘
+```
+
+**Rules**:
+- Layers can only depend on layers below them
+- No circular dependencies
+- Use interfaces for layer boundaries
+- Dependency injection for loose coupling
+
+## 📁 Module Organization Standards (MANDATORY)
+
+### Universal Module Structure
+```
+src/
+├── modules/
+│   ├── shared/                 # Shared utilities
+│   │   ├── contracts/         # Common interfaces
+│   │   ├── utils/             # Utility functions
+│   │   ├── constants/         # Application constants
+│   │   └── types/             # Common types
+│   ├── feature-module/
+│   │   ├── contracts/         # Feature interfaces
+│   │   │   ├── entities.ts    # Domain entities
+│   │   │   ├── repositories.ts # Repository interfaces
+│   │   │   └── services.ts    # Service interfaces
+│   │   ├── domain/            # Business logic
+│   │   │   ├── entities/      # Domain models
+│   │   │   ├── services/      # Business services
+│   │   │   └── validators/    # Business rules
+│   │   ├── infrastructure/    # External concerns
+│   │   │   ├── repositories/  # Data access
+│   │   │   ├── external/      # External APIs
+│   │   │   └── messaging/     # Event handling
+│   │   ├── application/       # Use cases
+│   │   │   ├── commands/      # Write operations
+│   │   │   ├── queries/       # Read operations
+│   │   │   └── handlers/      # Use case handlers
+│   │   └── presentation/      # API layer
+│   │       ├── controllers/   # Request handlers
+│   │       ├── routes/        # Route definitions
+│   │       ├── middleware/    # Request processing
+│   │       └── serializers/   # Response formatting
+│   └── core/                  # Core application
+│       ├── config/           # Configuration
+│       ├── database/         # Database setup
+│       ├── logging/          # Logging setup
+│       ├── security/         # Security setup
+│       └── startup/          # Application startup
+```
+
+## 🏗️ Core Design Patterns (MANDATORY)
+
+### 1. Repository Pattern
+**Purpose**: Abstract data access logic
+**Benefits**: Testable, maintainable, database-agnostic
+
+```typescript
+// Universal Interface (Framework Independent)
+interface Repository<T, ID> {
+  create(entity: T): Promise<T>;
+  findById(id: ID): Promise<T | null>;
+  findAll(filters?: Partial<T>): Promise<T[]>;
+  update(id: ID, updates: Partial<T>): Promise<T | null>;
+  delete(id: ID): Promise<boolean>;
+}
+```
+
+### 2. Service Pattern
+**Purpose**: Encapsulate business logic
+**Benefits**: Reusable, testable, single responsibility
+
+```typescript
+// Universal Service Interface
+interface Service<T, CreateDto, UpdateDto> {
+  create(data: CreateDto): Promise<T>;
+  findById(id: string): Promise<T | null>;
+  findAll(filters?: any): Promise<T[]>;
+  update(id: string, data: UpdateDto): Promise<T | null>;
+  delete(id: string): Promise<boolean>;
+}
+```
+
+### 3. Factory Pattern
+**Purpose**: Create objects without specifying exact classes
+**Benefits**: Flexible object creation, easy testing
+
+```typescript
+// Universal Factory Interface
+interface Factory<T> {
+  create(config: any): T;
+  createFromType(type: string, config: any): T;
+}
+```
+
+## 🗄️ Data Management Patterns (MANDATORY)
+
+### Universal Data Access Pattern
+
+#### 1. Entity Design
+```typescript
+// Universal Entity Interface
+interface Entity {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isActive: boolean; // For soft delete
+}
+
+// Domain Entity
+interface User extends Entity {
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+}
+```
+
+#### 2. Repository Implementation
+```typescript
+// Universal Repository Interface
+interface Repository<T extends Entity> {
+  create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T>;
+  findById(id: string): Promise<T | null>;
+  findAll(filters?: Partial<T>): Promise<T[]>;
+  update(id: string, updates: Partial<T>): Promise<T | null>;
+  delete(id: string): Promise<boolean>;
+  softDelete(id: string): Promise<boolean>;
+}
+```
+
+#### 3. Data Validation
+```typescript
+// Universal Validation Interface
+interface Validator<T> {
+  validate(data: unknown): ValidationResult<T>;
+}
+
+interface ValidationResult<T> {
+  isValid: boolean;
+  data?: T;
+  errors?: ValidationError[];
+}
+
+interface ValidationError {
+  field: string;
+  message: string;
+  code: string;
+}
+```
+
+### Database Design Principles
+- Use consistent naming conventions
+- Implement proper indexing
+- Use soft delete pattern
+- Include audit fields (createdAt, updatedAt)
+- Normalize data appropriately
+
+## 🔒 Security & Authentication Standards (MANDATORY)
+
+### Universal Security Principles
+
+#### 1. Authentication Strategy
+```typescript
+// Universal Authentication Interface
+interface AuthenticationService {
+  login(credentials: LoginCredentials): Promise<AuthResult>;
+  logout(token: string): Promise<void>;
+  validateToken(token: string): Promise<AuthContext | null>;
+  refreshToken(refreshToken: string): Promise<AuthResult>;
+}
+
+interface AuthContext {
+  userId: string;
+  email: string;
+  role: string;
+  permissions: string[];
+  sessionId: string;
+}
+
+interface AuthResult {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: Date;
+  user: User;
+}
+```
+
+#### 2. Authorization Patterns
+```typescript
+// Universal Authorization Interface
+interface AuthorizationService {
+  hasPermission(userId: string, permission: string): Promise<boolean>;
+  hasRole(userId: string, role: string): Promise<boolean>;
+  canAccessResource(userId: string, resource: string, action: string): Promise<boolean>;
+}
+
+// Role-Based Access Control
+interface Role {
+  name: string;
+  permissions: Permission[];
+}
+
+interface Permission {
+  resource: string;
+  actions: string[];
+}
+```
+
+#### 3. Input Validation
+```typescript
+// Universal Validation Rules
+interface ValidationRules {
+  required: boolean;
+  type: 'string' | 'number' | 'boolean' | 'email' | 'uuid';
+  minLength?: number;
+  maxLength?: number;
+  pattern?: RegExp;
+  custom?: (value: any) => boolean;
+}
+
+// Security Headers
+interface SecurityHeaders {
+  'Content-Security-Policy': string;
+  'X-Frame-Options': string;
+  'X-Content-Type-Options': string;
+  'Strict-Transport-Security': string;
+}
+```
+
+### Password Security
+- Use strong hashing algorithms (bcrypt, Argon2)
+- Implement salt rounds (minimum 12)
+- Enforce password complexity rules
+- Implement password reset functionality
+
+### Rate Limiting
+- Implement per-endpoint limits
+- Use sliding window algorithm
+- Store limits in cache/database
+- Different limits for authenticated vs anonymous users
+
+## 🌐 API Design Principles (MANDATORY)
+
+### RESTful API Standards
+
+#### 1. Resource Naming
+```
+✅ GOOD:
+GET    /api/users
+POST   /api/users
+GET    /api/users/123
+PUT    /api/users/123
+DELETE /api/users/123
+
+❌ BAD:
+GET    /api/getUsers
+POST   /api/createUser
+GET    /api/user/123
+POST   /api/updateUser/123
+POST   /api/deleteUser/123
+```
+
+#### 2. HTTP Status Codes
+```typescript
+// Universal Status Code Usage
+const HTTP_STATUS = {
+  // Success
+  OK: 200,                    // GET, PUT success
+  CREATED: 201,              // POST success
+  NO_CONTENT: 204,           // DELETE success
+  
+  // Client Error
+  BAD_REQUEST: 400,          // Invalid input
+  UNAUTHORIZED: 401,         // Authentication required
+  FORBIDDEN: 403,            // Insufficient permissions
+  NOT_FOUND: 404,            // Resource not found
+  CONFLICT: 409,             // Resource conflict
+  UNPROCESSABLE_ENTITY: 422, // Validation error
+  
+  // Server Error
+  INTERNAL_SERVER_ERROR: 500, // Server error
+  SERVICE_UNAVAILABLE: 503,   // Service down
+} as const;
+```
+
+#### 3. Response Format
+```typescript
+// Universal Response Structure
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    details?: any;
+  };
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  meta?: {
+    timestamp: string;
+    requestId: string;
+    version: string;
+  };
+}
+
+// Success Response
+const successResponse: ApiResponse<User> = {
+  success: true,
+  data: user,
+  meta: {
+    timestamp: new Date().toISOString(),
+    requestId: 'req-123',
+    version: '1.0.0'
+  }
+};
+
+// Error Response
+const errorResponse: ApiResponse<null> = {
+  success: false,
+  error: {
+    code: 'USER_NOT_FOUND',
+    message: 'User with specified ID not found',
+    details: { userId: '123' }
+  },
+  meta: {
+    timestamp: new Date().toISOString(),
+    requestId: 'req-123',
+    version: '1.0.0'
+  }
+};
+```
+
+### API Versioning
+```typescript
+// URL Versioning (Recommended)
+/api/v1/users
+/api/v2/users
+
+// Header Versioning
+Accept: application/vnd.api+json;version=1
+
+// Query Parameter Versioning
+/api/users?version=1
+```
+
+## 🚨 Error Handling & Logging (MANDATORY)
+
+### Universal Error Handling
+
+#### 1. Error Hierarchy
+```typescript
+// Base Error Class
+abstract class ApplicationError extends Error {
+  abstract code: string;
+  abstract httpStatusCode: number;
+  public timestamp: Date;
+  public requestId?: string;
+
+  constructor(message: string, requestId?: string) {
+    super(message);
+    this.name = this.constructor.name;
+    this.timestamp = new Date();
+    this.requestId = requestId;
+    Error.captureStackTrace(this, this.constructor);
+  }
+
+  abstract toJson(): ErrorResponse;
+}
+
+// Specific Error Types
+class ValidationError extends ApplicationError {
+  code = 'VALIDATION_ERROR';
+  httpStatusCode = 400;
+  
+  constructor(message: string, field: string, requestId?: string) {
+    super(message, requestId);
+    this.field = field;
+  }
+  
+  toJson(): ErrorResponse {
+    return {
+      code: this.code,
+      message: this.message,
+      field: this.field,
+      timestamp: this.timestamp.toISOString(),
+      requestId: this.requestId
+    };
+  }
+}
+
+class NotFoundError extends ApplicationError {
+  code = 'NOT_FOUND';
+  httpStatusCode = 404;
+  
+  toJson(): ErrorResponse {
+    return {
+      code: this.code,
+      message: this.message,
+      timestamp: this.timestamp.toISOString(),
+      requestId: this.requestId
+    };
+  }
+}
+```
+
+#### 2. Centralized Error Handling
+```typescript
+// Universal Error Handler Interface
+interface ErrorHandler {
+  handle(error: Error, context: ErrorContext): Promise<void>;
+}
+
+interface ErrorContext {
+  requestId: string;
+  userId?: string;
+  endpoint: string;
+  method: string;
+  timestamp: Date;
+}
+
+// Error Handler Implementation
+class GlobalErrorHandler implements ErrorHandler {
+  async handle(error: Error, context: ErrorContext): Promise<void> {
+    // Log error
+    await this.logError(error, context);
+    
+    // Send to monitoring service
+    await this.sendToMonitoring(error, context);
+    
+    // Send alerts if critical
+    if (this.isCritical(error)) {
+      await this.sendAlert(error, context);
+    }
+  }
+}
+```
+
+### Logging Standards
+
+#### 1. Log Levels
+```typescript
+enum LogLevel {
+  ERROR = 'error',     // System errors, exceptions
+  WARN = 'warn',       // Warning conditions
+  INFO = 'info',       // General information
+  DEBUG = 'debug',     // Debug information
+  TRACE = 'trace'      // Detailed trace information
+}
+
+// Universal Logger Interface
+interface Logger {
+  error(message: string, context?: LogContext): void;
+  warn(message: string, context?: LogContext): void;
+  info(message: string, context?: LogContext): void;
+  debug(message: string, context?: LogContext): void;
+  trace(message: string, context?: LogContext): void;
+}
+
+interface LogContext {
+  requestId?: string;
+  userId?: string;
+  endpoint?: string;
+  method?: string;
+  duration?: number;
+  metadata?: Record<string, any>;
+}
+```
+
+#### 2. Structured Logging
+```typescript
+// Universal Log Entry Format
+interface LogEntry {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  context: LogContext;
+  metadata?: Record<string, any>;
+}
+
+// Example Log Entry
+const logEntry: LogEntry = {
+  timestamp: '2024-09-05T17:30:00.000Z',
+  level: LogLevel.INFO,
+  message: 'User created successfully',
+  context: {
+    requestId: 'req-123',
+    userId: 'user-456',
+    endpoint: '/api/users',
+    method: 'POST',
+    duration: 150
+  },
+  metadata: {
+    userRole: 'admin',
+    ipAddress: '192.168.1.1'
+  }
+};
+```
+
+## 📊 Database Standards
+
+### Schema Design
+- Use Mongoose for MongoDB operations
+- Define interfaces extending `Document`
+- Include `timestamps: true` for createdAt/updatedAt
+- Use proper indexing for performance
+- Implement soft delete with `active: boolean` field
+
+### Repository Pattern
+- Create repository classes for all database operations
+- Use static methods for repository operations
+- Implement data conversion between DB and application formats
+- Handle database errors gracefully
+
+### Connection Management
+- Use connection pooling and caching
+- Implement proper error handling for connection failures
+- Use environment-based configuration for database URLs
+
+## ⚡ Performance & Scalability (MANDATORY)
+
+### Universal Performance Principles
+
+#### 1. Caching Strategy
+```typescript
+// Universal Cache Interface
+interface CacheService {
+  get<T>(key: string): Promise<T | null>;
+  set<T>(key: string, value: T, ttl?: number): Promise<void>;
+  delete(key: string): Promise<void>;
+  clear(): Promise<void>;
+  exists(key: string): Promise<boolean>;
+}
+
+// Cache Key Patterns
+const CacheKeys = {
+  USER: (id: string) => `user:${id}`,
+  USER_TASKS: (userId: string) => `user:${userId}:tasks`,
+  API_RATE_LIMIT: (ip: string) => `rate_limit:${ip}`,
+  SESSION: (sessionId: string) => `session:${sessionId}`
+} as const;
+```
+
+#### 2. Database Optimization
+```typescript
+// Universal Query Optimization
+interface QueryOptimization {
+  // Indexing Strategy
+  indexes: {
+    single: string[];
+    compound: string[][];
+    text: string[];
+    unique: string[];
+  };
+  
+  // Query Patterns
+  patterns: {
+    findById: string;
+    findByUser: string;
+    pagination: string;
+    search: string;
+  };
+  
+  // Performance Monitoring
+  monitoring: {
+    slowQueryThreshold: number;
+    maxQueryTime: number;
+    connectionPoolSize: number;
+  };
+}
+```
+
+#### 3. Async Processing
+```typescript
+// Universal Async Processing Interface
+interface AsyncProcessor<T> {
+  process(data: T): Promise<void>;
+  retry(data: T, maxRetries: number): Promise<void>;
+  schedule(data: T, delay: number): Promise<void>;
+}
+
+// Background Job Interface
+interface BackgroundJob {
+  id: string;
+  type: string;
+  payload: any;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  attempts: number;
+  maxAttempts: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### Scalability Patterns
+
+#### 1. Horizontal Scaling
+- Stateless application design
+- Load balancer configuration
+- Database sharding strategies
+- Microservice architecture
+
+#### 2. Vertical Scaling
+- Memory optimization
+- CPU optimization
+- Database connection pooling
+- Resource monitoring
+
+### Performance Standards
+- Always use async/await for database operations
+- Implement proper error handling with try-catch
+- Use Promise.all() for parallel operations
+- Avoid blocking the event loop
+- Implement connection caching for databases
+- Use Redis for session storage (if needed)
+- Cache frequently accessed data
+- Implement cache invalidation strategies
+
+## 🧪 Testing Standards (MANDATORY)
+
+### Universal Testing Strategy
+
+#### 1. Testing Pyramid
+```
+        ┌─────────────┐
+        │   E2E Tests │  ← Few, High-Level
+        └─────────────┘
+       ┌─────────────────┐
+       │ Integration     │  ← Some, Medium-Level
+       │ Tests           │
+       └─────────────────┘
+    ┌───────────────────────┐
+    │ Unit Tests           │  ← Many, Low-Level
+    └───────────────────────┘
+```
+
+#### 2. Test Categories
+```typescript
+// Unit Test Interface
+interface UnitTest<T> {
+  testName: string;
+  arrange: () => T;
+  act: (arrange: T) => Promise<any>;
+  assert: (result: any, arrange: T) => void;
+}
+
+// Integration Test Interface
+interface IntegrationTest {
+  testName: string;
+  setup: () => Promise<void>;
+  execute: () => Promise<any>;
+  cleanup: () => Promise<void>;
+  assertions: (result: any) => void;
+}
+
+// E2E Test Interface
+interface E2ETest {
+  testName: string;
+  scenario: string;
+  steps: TestStep[];
+  expectedResult: any;
+}
+
+interface TestStep {
+  action: string;
+  input?: any;
+  expectedOutput?: any;
+}
+```
+
+#### 3. Test Data Management
+```typescript
+// Universal Test Data Factory
+interface TestDataFactory<T> {
+  create(overrides?: Partial<T>): T;
+  createMany(count: number, overrides?: Partial<T>): T[];
+  createValid(): T;
+  createInvalid(): Partial<T>;
+}
+
+// Mock Interface
+interface Mock<T> {
+  setup(): T;
+  reset(): void;
+  verify(): boolean;
+}
+```
+
+### Testing Requirements
+- Write unit tests for business logic
+- Implement integration tests for API endpoints
+- Use proper test data fixtures
+- Maintain high test coverage
+- Use Jest testing framework
+- Mock external dependencies
+- Aim for high test coverage
+
+## ⚙️ Configuration Management (MANDATORY)
+
+### Universal Configuration Pattern
+
+#### 1. Environment-Based Configuration
+```typescript
+// Universal Configuration Interface
+interface Configuration {
+  get<T>(key: string): T;
+  get<T>(key: string, defaultValue: T): T;
+  has(key: string): boolean;
+  getAll(): Record<string, any>;
+}
+
+// Configuration Schema
+interface ConfigSchema {
+  server: {
+    port: number;
+    host: string;
+    cors: {
+      origin: string[];
+      credentials: boolean;
+    };
+  };
+  database: {
+    uri: string;
+    poolSize: number;
+    timeout: number;
+  };
+  security: {
+    jwtSecret: string;
+    bcryptRounds: number;
+    rateLimit: {
+      windowMs: number;
+      maxRequests: number;
+    };
+  };
+  logging: {
+    level: string;
+    format: string;
+    transports: string[];
+  };
+}
+```
+
+#### 2. Configuration Validation
+```typescript
+// Universal Configuration Validator
+interface ConfigValidator {
+  validate(config: any): ValidationResult<ConfigSchema>;
+  validateEnvironment(): ValidationResult<Environment>;
+}
+
+interface Environment {
+  NODE_ENV: 'development' | 'staging' | 'production';
+  PORT: number;
+  DATABASE_URL: string;
+  JWT_SECRET: string;
+  REDIS_URL?: string;
+}
+```
+
+## 🚀 Deployment & Operations (MANDATORY)
+
+### Universal Deployment Standards
+
+#### 1. Containerization
+```dockerfile
+# Universal Dockerfile Pattern
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npm run build
+
+FROM node:18-alpine AS production
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+COPY --from=builder /app/dist ./dist
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+CMD ["node", "dist/main"]
+```
+
+#### 2. Health Checks
+```typescript
+// Universal Health Check Interface
+interface HealthCheck {
+  name: string;
+  check(): Promise<HealthStatus>;
+}
+
+interface HealthStatus {
+  status: 'healthy' | 'unhealthy' | 'degraded';
+  message?: string;
+  details?: Record<string, any>;
+  timestamp: Date;
+}
+
+// Health Check Implementation
+class DatabaseHealthCheck implements HealthCheck {
+  name = 'database';
+  
+  async check(): Promise<HealthStatus> {
+    try {
+      await this.database.ping();
+      return {
+        status: 'healthy',
+        message: 'Database connection successful',
+        timestamp: new Date()
+      };
+    } catch (error) {
+      return {
+        status: 'unhealthy',
+        message: 'Database connection failed',
+        details: { error: error.message },
+        timestamp: new Date()
+      };
+    }
+  }
+}
+```
+
+#### 3. Monitoring & Observability
+```typescript
+// Universal Metrics Interface
+interface MetricsCollector {
+  increment(metric: string, tags?: Record<string, string>): void;
+  gauge(metric: string, value: number, tags?: Record<string, string>): void;
+  histogram(metric: string, value: number, tags?: Record<string, string>): void;
+  timer(metric: string, tags?: Record<string, string>): Timer;
+}
+
+interface Timer {
+  stop(): void;
+}
+```
+
+## 📝 Code Quality Standards (MANDATORY)
+
+### TypeScript Usage
+- Use strict TypeScript configuration
+- Define interfaces for all data structures
+- Use proper typing for all functions
+- Avoid `any` type usage
+
+### File Naming Conventions (Universal)
+| Component | Convention | Example |
+|-----------|------------|---------|
+| **Files** | kebab-case | `user-service.ts`, `task-controller.ts` |
+| **Classes** | PascalCase | `UserService`, `TaskController` |
+| **Functions** | camelCase | `createUser()`, `getTaskById()` |
+| **Constants** | UPPER_CASE | `MAX_RETRY_ATTEMPTS`, `DEFAULT_PAGE_SIZE` |
+| **Interfaces** | PascalCase | `User`, `CreateTaskRequest` |
+| **Types** | PascalCase | `UserRole`, `TaskStatus` |
+| **Enums** | PascalCase | `HttpStatus`, `ErrorCode` |
+
+### Code Organization
+- Use module aliases for clean imports
+- Implement proper separation of concerns
+- Keep functions small and focused
+- Use descriptive variable and function names
+
+### Documentation
+- Comment complex business logic
+- Use JSDoc for function documentation
+- Maintain API documentation
+- Keep README files updated
+
+## 🎯 NestJS Specific Standards
+
+### Module Organization
+- Use feature modules for organization
+- Import only necessary modules
+- Export services that other modules need
+- Use forRoot/forFeature pattern for database modules
+
+### Controller Standards
+- Keep controllers thin - only handle HTTP concerns
+- Use DTOs for request/response validation
+- Implement proper HTTP status codes
+- Use appropriate decorators (@Get, @Post, @Put, @Delete)
+- Handle errors gracefully
+
+### Service Standards
+- Contain all business logic
+- Use dependency injection
+- Make methods async when dealing with I/O
+- Return proper types
+- Handle errors appropriately
+
+### DTO Standards
+- Use class-validator decorators for validation
+- Create separate DTOs for create/update operations
+- Use class-transformer for data transformation
+
+## 🗄️ MongoDB + Mongoose Standards
+
+### Schema Design
+- Use Mongoose schemas for MongoDB
+- Define relationships with ObjectId references
+- Use proper field types and validation
+- Add indexes for performance
+
+### Query Optimization
+- Use proper indexing strategy
+- Use aggregation pipelines for complex queries
+- Handle MongoDB-specific error types
+- Use transactions for multi-document operations
+
+## 🎓 Educational Platform Specific Standards
+
+### Core Entities
+- **User**: Profile, progress, streaks, achievements
+- **Subject**: Learning categories (Math, Science, etc.)
+- **Topic**: Specific learning topics within subjects
+- **Question**: MCQ questions with options and explanations
+- **Progress**: User's learning progress tracking
+- **Streak**: Daily study streak management
+
+### API Response Format
+Always use consistent response format:
+```typescript
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error?: string;
+}
+```
+
+### Educational Platform Patterns
+- **Progress Tracking**: Implement percentage-based progress calculation
+- **Streak Management**: Use date-based streak calculation
+- **Difficulty Levels**: Easy/Medium/Hard categorization
+- **Gamification**: Achievements, milestones, and rewards
+- **Learning Analytics**: Track study time, accuracy, completion rates
+
+### MongoDB Collections Structure
+```
+users: { _id, name, email, progress, streak, achievements }
+subjects: { _id, name, color, totalTopics, description }
+topics: { _id, subjectId, name, difficulty, estimatedTime, lessons }
+questions: { _id, topicId, question, options, correctAnswer, explanation }
+progress: { _id, userId, topicId, completedLessons, accuracy, lastStudied }
+```
+
+## ✅ Implementation Checklist (MANDATORY)
+
+### Project Setup
+- [ ] Initialize project with proper structure
+- [ ] Configure TypeScript with strict settings
+- [ ] Set up environment configuration
+- [ ] Configure logging system
+- [ ] Set up database connection
+- [ ] Configure security middleware
+- [ ] Set up error handling
+- [ ] Configure testing framework
+
+### Development Standards
+- [ ] Implement layered architecture
+- [ ] Create module structure
+- [ ] Implement repository pattern
+- [ ] Set up service layer
+- [ ] Configure authentication
+- [ ] Implement validation
+- [ ] Set up logging
+- [ ] Configure error handling
+
+### Testing & Quality
+- [ ] Write unit tests
+- [ ] Write integration tests
+- [ ] Write E2E tests
+- [ ] Set up code coverage
+- [ ] Configure linting
+- [ ] Set up code formatting
+- [ ] Implement CI/CD pipeline
+
+### Deployment & Operations
+- [ ] Configure Docker
+- [ ] Set up health checks
+- [ ] Configure monitoring
+- [ ] Set up logging aggregation
+- [ ] Configure error tracking
+- [ ] Set up performance monitoring
+- [ ] Implement backup strategies
+
+## 🔄 Version Control Standards
+
+### Commit Messages
+- Use conventional commit format: `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`
+- Include meaningful descriptions
+- Reference issue numbers when applicable
+- Keep commits atomic and focused
+
+### Branch Strategy
+- Use feature branches for development
+- Implement proper code review process
+- Use semantic versioning for releases
+- Maintain changelog documentation
+
+## 🚫 Anti-Patterns to Avoid
+
+- Don't put business logic in controllers
+- Don't use `any` type
+- Don't ignore error handling
+- Don't hardcode configuration values
+- Don't create circular dependencies
+- Don't mix concerns in single classes
+- Don't expose internal errors to clients
+- Don't skip input validation
+- Don't ignore TypeScript errors
+- Don't commit sensitive data
+
+## 📚 When Adding New Features
+
+1. Create a new module following the standard structure
+2. Define entities and DTOs with proper validation
+3. Implement service with business logic
+4. Create controller with proper validation
+5. Add repository for data access
+6. Write unit tests
+7. Update documentation
+8. Consider security implications
+9. Follow educational platform patterns
+10. Implement proper error handling
+
+## 🎯 Universal Applicability
+
+These standards work with:
+- **Node.js**: Express.js, NestJS, Fastify, Koa.js
+- **Python**: Django, Flask, FastAPI
+- **Java**: Spring Boot, Micronaut
+- **C#**: ASP.NET Core
+- **Go**: Gin, Echo, Fiber
+- **PHP**: Laravel, Symfony
+
+The core principles remain the same regardless of the framework or language used.
+
+---
+
+**Remember**: Keep it simple, follow NestJS conventions, prioritize maintainability and scalability, and always consider the educational platform context. These universal standards ensure consistency, quality, and enterprise-grade architecture across all backend development.

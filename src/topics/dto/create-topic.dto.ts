@@ -3,19 +3,19 @@ import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, IsIn } from 'cla
 export class CreateTopicDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsString()
   @IsNotEmpty()
-  subjectId: string;
+  subjectId!: string;
 
   @IsString()
   @IsIn(['Easy', 'Medium', 'Hard'])
-  difficulty: string;
+  difficulty!: string;
 
   @IsString()
   @IsNotEmpty()
-  estimatedTime: string;
+  estimatedTime!: string;
 
   @IsNumber()
   @IsOptional()

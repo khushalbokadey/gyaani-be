@@ -2,121 +2,93 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { SubjectsService } from './subjects.service';
 import { CreateSubjectDto } from './dto/create-subject.dto';
 import { UpdateSubjectDto } from './dto/update-subject.dto';
-import { TopicsService } from '../topics/topics.service';
+import { ApiResponse } from '../shared/interfaces/api-response.interface';
 
 @Controller('subjects')
 export class SubjectsController {
-  constructor(
-    private readonly subjectsService: SubjectsService,
-    private readonly topicsService: TopicsService,
-  ) {}
+  constructor(private readonly subjectsService: SubjectsService) {}
 
   @Get()
-  async findAll() {
-    const subjects = await this.subjectsService.findAll();
-    
-    // Get topics for each subject
-    const subjectsWithTopics = await Promise.all(
-      subjects.map(async (subject) => {
-        const topics = await this.topicsService.findBySubject(subject._id.toString());
-        return {
-          _id: subject._id,
-          name: subject.name,
-          color: subject.color,
-          totalTopics: topics.length,
-          completedTopics: topics.filter(topic => topic.progress === 100).length,
-          progress: subject.progress,
-          description: subject.description,
-          lastStudied: subject.lastStudied,
-          topics: topics.map((topic, index) => ({
-            id: index + 1,
-            name: topic.name,
-            progress: topic.progress,
-            difficulty: topic.difficulty,
-            estimatedTime: topic.estimatedTime,
-            totalLessons: topic.totalLessons,
-            completedLessons: topic.completedLessons,
-            totalQuestions: topic.totalQuestions,
-            description: topic.description,
-            ...(topic.isLocked && { isLocked: topic.isLocked })
-          }))
-        };
-      })
-    );
-
+  async findAll(): Promise<ApiResponse<any[]>> {
+    const subjects = await this.subjectsService.findAllWithTopics();
     return {
       success: true,
-      data: subjectsWithTopics
+      data: subjects,
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: `subjects_${Date.now()}`,
+        version: '1.0.0',
+      },
     };
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string): Promise<ApiResponse<any>> {
     const subject = await this.subjectsService.findOne(id);
     return {
       success: true,
-      data: subject
+      data: subject,
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: `subject_${id}_${Date.now()}`,
+        version: '1.0.0',
+      },
     };
   }
 
   @Get(':name/topics')
-  async getSubjectTopics(@Param('name') name: string) {
-    // Find subject by name
-    const subject = await this.subjectsService.findByName(name);
-    
-    // Get topics for this subject
-    const topics = await this.topicsService.findBySubject(subject._id.toString());
-    
+  async getSubjectTopics(@Param('name') name: string): Promise<ApiResponse<any>> {
+    const subjectWithTopics = await this.subjectsService.findByNameWithTopics(name);
     return {
       success: true,
-      data: {
-        id: 1,
-        name: subject.name,
-        progress: subject.progress,
-        totalTopics: topics.length,
-        completedTopics: topics.filter(t => t.progress === 100).length,
-        lastStudied: subject.lastStudied,
-        color: subject.color,
-        topics: topics.map((topic, index) => ({
-          id: index + 1,
-          name: topic.name,
-          progress: topic.progress,
-          difficulty: topic.difficulty,
-          estimatedTime: topic.estimatedTime,
-          totalLessons: topic.totalLessons,
-          completedLessons: topic.completedLessons,
-          totalQuestions: topic.totalQuestions,
-          description: topic.description,
-          ...(topic.isLocked && { isLocked: topic.isLocked })
-        }))
-      }
+      data: subjectWithTopics,
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: `subject_topics_${name}_${Date.now()}`,
+        version: '1.0.0',
+      },
     };
   }
 
   @Post()
-  async create(@Body() createSubjectDto: CreateSubjectDto) {
+  async create(@Body() createSubjectDto: CreateSubjectDto): Promise<ApiResponse<any>> {
     const subject = await this.subjectsService.create(createSubjectDto);
     return {
       success: true,
-      data: subject
+      data: subject,
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: `create_subject_${Date.now()}`,
+        version: '1.0.0',
+      },
     };
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateSubjectDto: UpdateSubjectDto) {
+  async update(@Param('id') id: string, @Body() updateSubjectDto: UpdateSubjectDto): Promise<ApiResponse<any>> {
     const subject = await this.subjectsService.update(id, updateSubjectDto);
     return {
       success: true,
-      data: subject
+      data: subject,
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: `update_subject_${id}_${Date.now()}`,
+        version: '1.0.0',
+      },
     };
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string): Promise<ApiResponse<any>> {
     const subject = await this.subjectsService.remove(id);
     return {
       success: true,
-      data: subject
+      data: subject,
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: `delete_subject_${id}_${Date.now()}`,
+        version: '1.0.0',
+      },
     };
   }
 }

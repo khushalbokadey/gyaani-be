@@ -17,6 +17,15 @@ Gyaani is an educational mobile application that provides structured learning ex
 - **MongoDB Integration** - Scalable data persistence with MongoDB Atlas
 - **TypeScript Support** - Type-safe development with full TypeScript integration
 
+### Enterprise Features
+- **Health Monitoring** - Comprehensive health checks for database, memory, and system status
+- **Structured Logging** - Winston-based logging with request tracking and context
+- **Error Handling** - Custom error classes with centralized exception handling
+- **Configuration Management** - Environment-based configuration with validation
+- **API Versioning** - Consistent API response format with metadata
+- **CORS Support** - Cross-origin resource sharing for frontend integration
+- **Request Validation** - Input validation using class-validator decorators
+
 ### Educational Features
 - **Difficulty Levels** - Easy, Medium, Hard categorization for topics
 - **Study Time Estimation** - Estimated completion time for each topic
@@ -28,10 +37,12 @@ Gyaani is an educational mobile application that provides structured learning ex
 
 - **Framework**: NestJS
 - **Database**: MongoDB with Mongoose
-- **Language**: TypeScript
+- **Language**: TypeScript (Strict Mode)
 - **Validation**: class-validator, class-transformer
+- **Logging**: Winston
 - **Environment**: Node.js
 - **Cloud Database**: MongoDB Atlas
+- **Architecture**: Layered Architecture (Presentation, Application, Domain, Infrastructure)
 
 ## 📁 Project Structure
 
@@ -41,6 +52,14 @@ src/
 ├── app.module.ts          # Root module
 ├── app.controller.ts      # Root controller
 ├── app.service.ts         # Root service
+├── core/                  # Core application infrastructure
+│   ├── config/            # Environment configuration
+│   ├── health/            # Health check system
+│   └── logging/           # Structured logging
+├── shared/                # Shared utilities
+│   ├── errors/            # Custom error classes
+│   ├── filters/           # Global exception handling
+│   └── interfaces/        # Common interfaces
 ├── subjects/              # Subjects module
 │   ├── dto/
 │   │   ├── create-subject.dto.ts
@@ -50,16 +69,15 @@ src/
 │   ├── subjects.controller.ts
 │   ├── subjects.service.ts
 │   └── subjects.module.ts
-├── topics/                # Topics module
-│   ├── dto/
-│   │   ├── create-topic.dto.ts
-│   │   └── update-topic.dto.ts
-│   ├── schemas/
-│   │   └── topic.schema.ts
-│   ├── topics.controller.ts
-│   ├── topics.service.ts
-│   └── topics.module.ts
-└── common/                # Shared utilities (future)
+└── topics/                # Topics module
+    ├── dto/
+    │   ├── create-topic.dto.ts
+    │   └── update-topic.dto.ts
+    ├── schemas/
+    │   └── topic.schema.ts
+    ├── topics.controller.ts
+    ├── topics.service.ts
+    └── topics.module.ts
 ```
 
 ## 🚀 Getting Started
@@ -86,9 +104,32 @@ src/
 3. **Environment Setup**
    Create a `.env` file in the root directory:
    ```env
+   # Database Configuration
    MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/gyaani-app?retryWrites=true&w=majority
+   
+   # Server Configuration
    PORT=3000
    NODE_ENV=development
+   HOST=localhost
+   
+   # Security Configuration
+   JWT_SECRET=your-super-secret-jwt-key-change-in-production
+   BCRYPT_ROUNDS=12
+   
+   # Rate Limiting
+   RATE_LIMIT_WINDOW_MS=900000
+   RATE_LIMIT_MAX_REQUESTS=100
+   
+   # Logging Configuration
+   LOG_LEVEL=info
+   LOG_FORMAT=json
+   
+   # CORS Configuration
+   CORS_ORIGIN=http://localhost:3000,http://localhost:3001
+   CORS_CREDENTIALS=true
+   
+   # Health Check Configuration
+   HEALTH_CHECK_TIMEOUT=5000
    ```
 
 4. **Start the development server**
@@ -96,13 +137,13 @@ src/
    npm run start:dev
    ```
 
-The server will start on `http://localhost:3000`
+The server will start on `http://localhost:3000` with API endpoints available at `http://localhost:3000/api`
 
 ## 📚 API Documentation
 
 ### Base URL
 ```
-http://localhost:3000
+http://localhost:3000/api
 ```
 
 ### Response Format
@@ -110,7 +151,12 @@ All API responses follow this consistent format:
 ```json
 {
   "success": true,
-  "data": [/* actual data */]
+  "data": [/* actual data */],
+  "meta": {
+    "timestamp": "2025-09-18T10:21:22.994Z",
+    "requestId": "subjects_1758190882994",
+    "version": "1.0.0"
+  }
 }
 ```
 
@@ -120,38 +166,51 @@ All API responses follow this consistent format:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/subjects` | Get all subjects with topics |
-| GET | `/subjects/:id` | Get specific subject by ID |
-| GET | `/subjects/:name/topics` | Get topics for a specific subject |
-| POST | `/subjects` | Create a new subject |
-| PATCH | `/subjects/:id` | Update a subject |
-| DELETE | `/subjects/:id` | Delete a subject |
+| GET | `/api/subjects` | Get all subjects with topics |
+| GET | `/api/subjects/:id` | Get specific subject by ID |
+| GET | `/api/subjects/:name/topics` | Get topics for a specific subject |
+| POST | `/api/subjects` | Create a new subject |
+| PATCH | `/api/subjects/:id` | Update a subject |
+| DELETE | `/api/subjects/:id` | Delete a subject |
 
 #### Topics
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/topics` | Get all topics |
-| GET | `/topics/:id` | Get specific topic by ID |
-| POST | `/topics` | Create a new topic |
-| PATCH | `/topics/:id` | Update a topic |
-| DELETE | `/topics/:id` | Delete a topic |
+| GET | `/api/topics` | Get all topics |
+| GET | `/api/topics/:id` | Get specific topic by ID |
+| POST | `/api/topics` | Create a new topic |
+| PATCH | `/api/topics/:id` | Update a topic |
+| DELETE | `/api/topics/:id` | Delete a topic |
+
+#### Health Check
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Application health check |
+| GET | `/api/health/ready` | Readiness check |
+| GET | `/api/health/live` | Liveness check |
 
 ### Sample API Calls
 
+#### Health Check
+```bash
+curl http://localhost:3000/api/health
+```
+
 #### Get All Subjects
 ```bash
-curl http://localhost:3000/subjects
+curl http://localhost:3000/api/subjects
 ```
 
 #### Get Mathematics Topics
 ```bash
-curl http://localhost:3000/subjects/Mathematics/topics
+curl http://localhost:3000/api/subjects/Mathematics/topics
 ```
 
 #### Create a New Subject
 ```bash
-curl -X POST http://localhost:3000/subjects \
+curl -X POST http://localhost:3000/api/subjects \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Computer Science",
@@ -162,7 +221,7 @@ curl -X POST http://localhost:3000/subjects \
 
 #### Create a New Topic
 ```bash
-curl -X POST http://localhost:3000/topics \
+curl -X POST http://localhost:3000/api/topics \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Data Structures",
@@ -306,21 +365,48 @@ NODE_ENV=production
 ### Using Postman
 
 1. Import the provided Postman collection
-2. Set the base URL to `http://localhost:3000`
+2. Set the base URL to `http://localhost:3000/api`
 3. Test all endpoints with sample data
 
 ### Using curl
 
 ```bash
 # Test server health
-curl http://localhost:3000
+curl http://localhost:3000/api/health
 
 # Get all subjects
-curl http://localhost:3000/subjects
+curl http://localhost:3000/api/subjects
 
 # Get specific subject topics
-curl http://localhost:3000/subjects/Mathematics/topics
+curl http://localhost:3000/api/subjects/Mathematics/topics
 ```
+
+## 🔧 Error Handling
+
+### Error Response Format
+All errors follow a consistent format:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Subject with ID 123 not found",
+    "timestamp": "2025-09-18T10:21:22.994Z",
+    "requestId": "req_1758190882994"
+  },
+  "meta": {
+    "timestamp": "2025-09-18T10:21:22.994Z",
+    "requestId": "req_1758190882994",
+    "version": "1.0.0"
+  }
+}
+```
+
+### Error Types
+- **400 Bad Request** - Validation errors, malformed requests
+- **404 Not Found** - Resource not found
+- **409 Conflict** - Resource already exists
+- **500 Internal Server Error** - Server-side errors
 
 ## 🐛 Troubleshooting
 
@@ -338,6 +424,15 @@ curl http://localhost:3000/subjects/Mathematics/topics
 3. **TypeScript Errors**
    - Run `npm run build` to check for compilation errors
    - Ensure all dependencies are installed: `npm install`
+
+4. **API Endpoint Not Found (404)**
+   - Ensure you're using the `/api` prefix in your requests
+   - Check that the server is running on the correct port
+   - Verify the endpoint URL is correct
+
+5. **CORS Errors**
+   - Check your CORS_ORIGIN environment variable
+   - Ensure your frontend URL is included in the allowed origins
 
 
 ## 🙏 Acknowledgments
