@@ -49,6 +49,9 @@ lerna-debug.log*
 REACT_NATIVE_INTEGRATION.md
 QUICK_REFERENCE.md
 universal-backend-standards.md
+POSTMAN_TESTING_GUIDE.md
+QUICK_START_POSTMAN.md
+Gyaani_Backend_API.postman_collection.json
 
 # temp directory
 .temp

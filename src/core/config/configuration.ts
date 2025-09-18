@@ -71,3 +71,28 @@ export const configuration = (): AppConfig => ({
     timeout: parseInt(process.env.HEALTH_CHECK_TIMEOUT || '5000', 10),
   },
 });
+
+// Environment validation
+export const validateEnvironment = (): void => {
+  const requiredEnvVars = [
+    'MONGODB_URI',
+    'JWT_SECRET',
+  ];
+
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+  }
+
+  // Validate JWT secret strength
+  if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters long');
+  }
+
+  // Validate bcrypt rounds
+  const bcryptRounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+  if (bcryptRounds < 10 || bcryptRounds > 15) {
+    throw new Error('BCRYPT_ROUNDS must be between 10 and 15');
+  }
+};

@@ -728,6 +728,39 @@ interface BackgroundJob {
     └───────────────────────┘
 ```
 
+#### 2. Postman Testing Patterns
+```typescript
+// Test Scripts for Postman
+pm.test("Response is successful", function () {
+    pm.response.to.have.status(200);
+    const jsonData = pm.response.json();
+    pm.expect(jsonData.success).to.be.true;
+});
+
+// Store variables for chained requests
+pm.collectionVariables.set("authToken", jsonData.data.accessToken);
+pm.collectionVariables.set("userId", jsonData.data.user._id);
+
+// Test authentication
+pm.test("Authentication required", function () {
+    pm.response.to.have.status(401);
+    const jsonData = pm.response.json();
+    pm.expect(jsonData.error.code).to.eql("UNAUTHORIZED");
+});
+```
+
+#### 3. API Testing Checklist
+- [ ] Health check endpoint
+- [ ] User registration flow
+- [ ] Email verification process
+- [ ] Login with password
+- [ ] Login with OTP
+- [ ] JWT token validation
+- [ ] Protected endpoint access
+- [ ] Error handling scenarios
+- [ ] Rate limiting behavior
+- [ ] Input validation
+
 #### 2. Test Categories
 ```typescript
 // Unit Test Interface
@@ -1002,24 +1035,85 @@ interface Timer {
 - Handle MongoDB-specific error types
 - Use transactions for multi-document operations
 
+## 🔐 Authentication & Security Standards (MANDATORY)
+
+### Authentication Patterns
+- **JWT-based Authentication** with access and refresh tokens
+- **OTP-based Login** for enhanced security
+- **Email Verification** required for account activation
+- **Password Hashing** with bcrypt (12+ rounds)
+- **Rate Limiting** on authentication endpoints
+- **Session Management** with proper token expiration
+
+### Security Implementation
+```typescript
+// JWT Configuration
+interface JWTConfig {
+  secret: string;           // 32+ characters
+  expiresIn: string;        // 15m for access tokens
+  refreshExpiresIn: string; // 7d for refresh tokens
+}
+
+// Password Security
+interface PasswordSecurity {
+  bcryptRounds: number;     // 12-15 rounds
+  minLength: number;        // 8 characters
+  complexity: boolean;      // uppercase, lowercase, number, special char
+}
+
+// OTP Security
+interface OTPSecurity {
+  length: number;           // 6 digits
+  expiresIn: number;        // 10 minutes
+  maxAttempts: number;      // 3 attempts
+  rateLimit: number;        // 1 minute cooldown
+}
+```
+
+### Authentication Flow
+1. **Registration** → Email verification required
+2. **Login** → Password or OTP-based
+3. **Token Management** → Access + Refresh tokens
+4. **Password Reset** → Secure token-based reset
+5. **Account Security** → Change password, logout
+
+### Security Headers
+```typescript
+interface SecurityHeaders {
+  'Authorization': 'Bearer <jwt-token>';
+  'Content-Type': 'application/json';
+  'X-Request-ID': 'unique-request-id';
+  'X-API-Version': '1.0.0';
+}
+```
+
 ## 🎓 Educational Platform Specific Standards
 
 ### Core Entities
-- **User**: Profile, progress, streaks, achievements
+- **User**: Profile, progress, streaks, achievements, authentication
 - **Subject**: Learning categories (Math, Science, etc.)
 - **Topic**: Specific learning topics within subjects
 - **Question**: MCQ questions with options and explanations
 - **Progress**: User's learning progress tracking
 - **Streak**: Daily study streak management
+- **OTP**: One-time passwords for verification
 
 ### API Response Format
 Always use consistent response format:
 ```typescript
 interface ApiResponse<T> {
   success: boolean;
-  data: T;
-  message?: string;
-  error?: string;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    details?: any;
+  };
+  meta?: {
+    timestamp: string;
+    requestId: string;
+    version: string;
+  };
 }
 ```
 
@@ -1029,14 +1123,41 @@ interface ApiResponse<T> {
 - **Difficulty Levels**: Easy/Medium/Hard categorization
 - **Gamification**: Achievements, milestones, and rewards
 - **Learning Analytics**: Track study time, accuracy, completion rates
+- **User Authentication**: Secure login with multiple methods
+- **Data Privacy**: Protect user learning data
 
 ### MongoDB Collections Structure
 ```
-users: { _id, name, email, progress, streak, achievements }
-subjects: { _id, name, color, totalTopics, description }
+users: { 
+  _id, email, firstName, lastName, password, phoneNumber,
+  role, status, isEmailVerified, isPhoneVerified,
+  progress, streak, achievements, preferences, lastLoginAt
+}
+subjects: { _id, name, color, totalTopics, description, progress }
 topics: { _id, subjectId, name, difficulty, estimatedTime, lessons }
 questions: { _id, topicId, question, options, correctAnswer, explanation }
 progress: { _id, userId, topicId, completedLessons, accuracy, lastStudied }
+otps: { _id, code, identifier, type, status, expiresAt, attempts }
+```
+
+### Authentication Endpoints
+```typescript
+// Authentication Routes
+POST   /api/auth/register           // User registration
+POST   /api/auth/login              // Login with password
+POST   /api/auth/login/otp          // Login with OTP
+POST   /api/auth/request-login-otp  // Request login OTP
+POST   /api/auth/verify-email       // Verify email with OTP
+POST   /api/auth/forgot-password    // Request password reset
+POST   /api/auth/reset-password     // Reset password
+POST   /api/auth/change-password    // Change password
+POST   /api/auth/refresh-token      // Refresh access token
+GET    /api/auth/me                 // Get user profile
+
+// OTP Management
+POST   /api/auth/otp/request        // Request OTP
+POST   /api/auth/otp/verify         // Verify OTP
+POST   /api/auth/otp/resend         // Resend OTP
 ```
 
 ## ✅ Implementation Checklist (MANDATORY)

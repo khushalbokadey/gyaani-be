@@ -9,10 +9,13 @@ Gyaani is an educational mobile application that provides structured learning ex
 ## ✨ Features
 
 ### Core Features
+- **User Authentication** - JWT-based authentication with email/OTP login
+- **User Management** - User registration, profile management, and account verification
 - **Subject Management** - Create and manage learning subjects (Mathematics, Physics, Chemistry, Biology)
 - **Topic Management** - Organize topics within each subject with difficulty levels
 - **Progress Tracking** - Real-time progress calculation and completion tracking
 - **Topic Locking System** - Sequential learning progression with locked/unlocked topics
+- **OTP System** - One-time password generation for email verification and secure login
 - **RESTful API** - Clean, consistent API endpoints with proper error handling
 - **MongoDB Integration** - Scalable data persistence with MongoDB Atlas
 - **TypeScript Support** - Type-safe development with full TypeScript integration
@@ -60,6 +63,31 @@ src/
 │   ├── errors/            # Custom error classes
 │   ├── filters/           # Global exception handling
 │   └── interfaces/        # Common interfaces
+├── users/                 # Users module
+│   ├── dto/
+│   │   ├── register.dto.ts
+│   │   ├── login.dto.ts
+│   │   ├── otp.dto.ts
+│   │   └── update-user.dto.ts
+│   ├── schemas/
+│   │   ├── user.schema.ts
+│   │   └── otp.schema.ts
+│   ├── services/
+│   │   ├── auth.service.ts
+│   │   ├── otp.service.ts
+│   │   └── email.service.ts
+│   ├── controllers/
+│   │   └── auth.controller.ts
+│   ├── guards/
+│   │   ├── jwt-auth.guard.ts
+│   │   └── roles.guard.ts
+│   ├── decorators/
+│   │   ├── public.decorator.ts
+│   │   ├── roles.decorator.ts
+│   │   └── current-user.decorator.ts
+│   ├── strategies/
+│   │   └── jwt.strategy.ts
+│   └── users.module.ts
 ├── subjects/              # Subjects module
 │   ├── dto/
 │   │   ├── create-subject.dto.ts
@@ -113,8 +141,14 @@ src/
    HOST=localhost
    
    # Security Configuration
-   JWT_SECRET=your-super-secret-jwt-key-change-in-production
+   JWT_SECRET=your-super-secret-jwt-key-change-in-production-2024-gyaani-app
+   JWT_EXPIRES_IN=15m
+   JWT_REFRESH_EXPIRES_IN=7d
    BCRYPT_ROUNDS=12
+   
+   # Email Configuration
+   EMAIL_FROM=noreply@gyaani.com
+   FRONTEND_URL=http://localhost:3000
    
    # Rate Limiting
    RATE_LIMIT_WINDOW_MS=900000
@@ -162,6 +196,29 @@ All API responses follow this consistent format:
 
 ### Endpoints
 
+#### Authentication
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/login` | Login with email/phone + password |
+| POST | `/api/auth/login/otp` | Login with OTP |
+| POST | `/api/auth/request-login-otp` | Request OTP for login |
+| POST | `/api/auth/verify-email` | Verify email with OTP |
+| POST | `/api/auth/forgot-password` | Request password reset |
+| POST | `/api/auth/reset-password` | Reset password with token |
+| POST | `/api/auth/change-password` | Change password (authenticated) |
+| POST | `/api/auth/refresh-token` | Refresh access token |
+| GET | `/api/auth/me` | Get user profile (authenticated) |
+
+#### OTP Management
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/otp/request` | Request OTP |
+| POST | `/api/auth/otp/verify` | Verify OTP |
+| POST | `/api/auth/otp/resend` | Resend OTP |
+
 #### Subjects
 
 | Method | Endpoint | Description |
@@ -192,6 +249,56 @@ All API responses follow this consistent format:
 | GET | `/api/health/live` | Liveness check |
 
 ### Sample API Calls
+
+#### Authentication
+
+**Register User**
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "password": "Password123!",
+    "phoneNumber": "+1234567890"
+  }'
+```
+
+**Login**
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "identifier": "user@example.com",
+    "password": "Password123!"
+  }'
+```
+
+**Request Login OTP**
+```bash
+curl -X POST http://localhost:3000/api/auth/request-login-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "identifier": "user@example.com"
+  }'
+```
+
+**Login with OTP**
+```bash
+curl -X POST http://localhost:3000/api/auth/login/otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "identifier": "user@example.com",
+    "otpCode": "123456"
+  }'
+```
+
+**Get User Profile (Authenticated)**
+```bash
+curl -X GET http://localhost:3000/api/auth/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
 
 #### Health Check
 ```bash
@@ -234,7 +341,78 @@ curl -X POST http://localhost:3000/api/topics \
   }'
 ```
 
+## 🔐 Authentication Flow
+
+### User Registration & Verification
+1. **Register**: User provides email, password, and personal details
+2. **Email Verification**: System sends OTP to user's email
+3. **OTP Verification**: User enters OTP to activate account
+4. **Account Active**: User can now login and access the platform
+
+### Login Methods
+1. **Password Login**: Traditional email/phone + password authentication
+2. **OTP Login**: Passwordless login using OTP sent to email/phone
+3. **JWT Tokens**: Secure access and refresh tokens for API authentication
+
+### Security Features
+- **Password Hashing**: bcrypt with 12+ rounds
+- **JWT Tokens**: 15-minute access tokens, 7-day refresh tokens
+- **OTP System**: 6-digit codes with 10-minute expiration
+- **Rate Limiting**: Prevents brute force attacks
+- **Email Verification**: Required for account activation
+
 ## 📊 Data Models
+
+### User Schema
+```typescript
+{
+  _id: ObjectId,
+  email: string,              // User email (unique)
+  password: string,           // Hashed password
+  firstName: string,          // User's first name
+  lastName: string,           // User's last name
+  phoneNumber?: string,       // Optional phone number
+  role: string,               // User role (student, admin, etc.)
+  status: string,             // Account status (pending, active, suspended)
+  isEmailVerified: boolean,   // Email verification status
+  isPhoneVerified: boolean,   // Phone verification status
+  lastLoginAt?: Date,         // Last login timestamp
+  preferences: {              // User preferences
+    notifications: boolean,
+    theme: string,
+    language: string
+  },
+  studyStats: {               // Learning statistics
+    totalStudyTime: number,
+    streak: number,
+    completedTopics: number,
+    accuracy: number
+  },
+  achievements: string[],     // User achievements
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### OTP Schema
+```typescript
+{
+  _id: ObjectId,
+  identifier: string,         // Email or phone number
+  code: string,              // 6-digit OTP code
+  type: string,              // email_verification, login, password_reset
+  status: string,            // pending, verified, expired
+  expiresAt: Date,           // Expiration timestamp
+  attempts: number,          // Number of verification attempts
+  metadata: {                // Additional data
+    ipAddress?: string,
+    userAgent?: string,
+    deviceId?: string
+  },
+  createdAt: Date,
+  updatedAt: Date
+}
+```
 
 ### Subject Schema
 ```typescript
@@ -364,9 +542,23 @@ NODE_ENV=production
 
 ### Using Postman
 
-1. Import the provided Postman collection
-2. Set the base URL to `http://localhost:3000/api`
-3. Test all endpoints with sample data
+1. **Import Collection**: Import `Gyaani_Backend_API.postman_collection.json`
+2. **Set Base URL**: Collection automatically uses `http://localhost:3000/api`
+3. **Test Authentication Flow**:
+   - Register new user
+   - Request email verification OTP
+   - Verify email with OTP (check terminal for code)
+   - Login with password or OTP
+   - Test authenticated endpoints
+
+### Quick Start Testing
+
+1. **Health Check**: `GET /api/health`
+2. **Register User**: `POST /api/auth/register`
+3. **Request OTP**: `POST /api/auth/otp/request`
+4. **Verify Email**: `POST /api/auth/verify-email` (use OTP from terminal)
+5. **Login**: `POST /api/auth/login`
+6. **Get Profile**: `GET /api/auth/me`
 
 ### Using curl
 
@@ -374,12 +566,39 @@ NODE_ENV=production
 # Test server health
 curl http://localhost:3000/api/health
 
+# Register user
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","firstName":"John","lastName":"Doe","password":"Password123!","phoneNumber":"+1234567890"}'
+
+# Login
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"identifier":"test@example.com","password":"Password123!"}'
+
 # Get all subjects
 curl http://localhost:3000/api/subjects
 
 # Get specific subject topics
 curl http://localhost:3000/api/subjects/Mathematics/topics
 ```
+
+### Testing Documentation
+
+- **Complete Guide**: See `POSTMAN_TESTING_GUIDE.md` for detailed testing instructions
+- **Quick Start**: See `QUICK_START_POSTMAN.md` for 5-minute setup
+- **React Native Integration**: See `REACT_NATIVE_INTEGRATION.md` for mobile app integration
+- **Postman Collection**: Import `Gyaani_Backend_API.postman_collection.json` for ready-to-use API tests
+
+### Testing Files Overview
+
+| File | Purpose |
+|------|---------|
+| `POSTMAN_TESTING_GUIDE.md` | Comprehensive step-by-step testing guide |
+| `QUICK_START_POSTMAN.md` | 5-minute quick start for testing |
+| `Gyaani_Backend_API.postman_collection.json` | Ready-to-import Postman collection |
+| `REACT_NATIVE_INTEGRATION.md` | Mobile app integration guide |
+| `QUICK_REFERENCE.md` | Quick reference for API changes |
 
 ## 🔧 Error Handling
 
@@ -433,6 +652,19 @@ All errors follow a consistent format:
 5. **CORS Errors**
    - Check your CORS_ORIGIN environment variable
    - Ensure your frontend URL is included in the allowed origins
+
+6. **Authentication Issues**
+   - Ensure JWT_SECRET is set and at least 32 characters long
+   - Check that email verification is completed before login
+   - Verify OTP codes from terminal logs (not email)
+   - Wait 1 minute between OTP requests
+   - Check token expiration (15 minutes for access tokens)
+
+7. **OTP Not Working**
+   - Check server logs for OTP codes (🔑 OTP CODE: 123456)
+   - Ensure OTP hasn't expired (10 minutes)
+   - Wait 1 minute between OTP requests
+   - Check rate limiting settings
 
 
 ## 🙏 Acknowledgments

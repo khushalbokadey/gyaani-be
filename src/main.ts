@@ -2,8 +2,17 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { LoggerService } from './core/logging/logger.service';
+import { validateEnvironment } from './core/config/configuration';
 
 async function bootstrap() {
+  // Validate environment variables
+  try {
+    validateEnvironment();
+  } catch (error) {
+    console.error('Environment validation failed:', error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+
   const app = await NestFactory.create(AppModule);
   const logger = app.get(LoggerService);
 
@@ -33,6 +42,9 @@ async function bootstrap() {
 
   logger.log(`Application is running on: http://localhost:${port}/api`);
   logger.log(`Health check available at: http://localhost:${port}/api/health`);
+  logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.log(`JWT Secret configured: ${process.env.JWT_SECRET ? 'Yes' : 'No'}`);
+  logger.log(`Database URI configured: ${process.env.MONGODB_URI ? 'Yes' : 'No'}`);
 }
 
 bootstrap().catch((error) => {
