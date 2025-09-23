@@ -6,7 +6,8 @@ import * as bcrypt from 'bcrypt';
 import { User, UserDocument, UserStatus } from '../schemas/user.schema';
 import { OtpService } from './otp.service';
 import { EmailService } from './email.service';
-import { RegisterDto, LoginDto, LoginWithOtpDto, ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from '../dto';
+import { PhoneService } from './phone.service';
+import { RegisterDto, PhoneRegisterDto, PhoneLoginDto, LoginDto, LoginWithOtpDto, ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from '../dto';
 import { LoggerService } from '../../core/logging/logger.service';
 import { ConflictError as CustomConflictError, ValidationError as CustomValidationError, NotFoundError as CustomNotFoundError } from '../../shared/errors/application.error';
 
@@ -19,7 +20,8 @@ export interface AuthResult {
 
 export interface JwtPayload {
   sub: string;
-  email: string;
+  email?: string;
+  phoneNumber?: string;
   role: string;
   iat?: number;
   exp?: number;
@@ -32,6 +34,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly otpService: OtpService,
     private readonly emailService: EmailService,
+    private readonly phoneService: PhoneService,
     private readonly logger: LoggerService,
   ) {}
 
@@ -111,6 +114,217 @@ export class AuthService {
       this.logger.error('Error registering user', error instanceof Error ? error.stack : String(error));
       throw error;
     }
+  }
+
+  /**
+   * Register a new user with phone number only
+   */
+  async registerWithPhone(registerDto: PhoneRegisterDto, metadata?: any): Promise<{ user: User; message: string }> {
+    try {
+      this.logger.log(`Registering new user with phone: ${registerDto.phoneNumber}`);
+
+      // Check if user already exists
+      const existingUser = await this.userModel.findOne({
+        phoneNumber: registerDto.phoneNumber,
+      });
+
+      if (existingUser) {
+        throw new CustomConflictError('User with this phone number already exists');
+      }
+
+      // Generate a temporary password (user will use OTP for login)
+      const tempPassword = this.generateTempPassword();
+      const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || '12');
+      const hashedPassword = await bcrypt.hash(tempPassword, saltRounds);
+
+      // Create user
+      const user = new this.userModel({
+        ...registerDto,
+        password: hashedPassword,
+        status: UserStatus.PENDING,
+        isPhoneVerified: false,
+        progress: {
+          totalSubjects: 0,
+          completedSubjects: 0,
+          totalTopics: 0,
+          completedTopics: 0,
+          overallProgress: 0,
+        },
+        preferences: {
+          notifications: true,
+          darkMode: false,
+          language: 'en',
+          timezone: 'UTC',
+        },
+      });
+
+      const savedUser = await user.save();
+
+      // Generate phone verification OTP
+      const otp = await this.otpService.createOtp(
+        registerDto.phoneNumber,
+        'phone_verification' as any,
+        savedUser._id.toString(),
+        metadata,
+      );
+
+      // Send verification SMS
+      await this.phoneService.sendOtpSms(
+        registerDto.phoneNumber,
+        otp.code,
+        'phone_verification',
+        registerDto.firstName,
+      );
+
+      this.logger.log(`User registered with phone successfully: ${savedUser._id}`);
+
+      return {
+        user: savedUser,
+        message: 'Registration successful. Please check your phone for verification code.',
+      };
+    } catch (error) {
+      this.logger.error('Error registering user with phone', error instanceof Error ? error.stack : String(error));
+      throw error;
+    }
+  }
+
+  /**
+   * Login with phone number and OTP
+   */
+  async loginWithPhone(loginDto: PhoneLoginDto): Promise<AuthResult> {
+    try {
+      this.logger.log(`Phone login attempt for: ${loginDto.phoneNumber}`);
+
+      // Verify OTP
+      await this.otpService.verifyOtp(
+        loginDto.phoneNumber,
+        loginDto.otpCode,
+        'phone_login' as any,
+      );
+
+      // Find user
+      const user = await this.userModel.findOne({
+        phoneNumber: loginDto.phoneNumber,
+      });
+
+      if (!user) {
+        throw new CustomNotFoundError('User not found');
+      }
+
+      // Check if user is active
+      if (user.status !== UserStatus.ACTIVE) {
+        throw new UnauthorizedException('Account is not active. Please verify your phone number first.');
+      }
+
+      // Update last login
+      await this.userModel.findByIdAndUpdate(user._id, {
+        lastLoginAt: new Date(),
+      });
+
+      // Generate tokens
+      const tokens = await this.generateTokens(user);
+
+      this.logger.log(`User logged in with phone successfully: ${user._id}`);
+
+      return {
+        user,
+        ...tokens,
+      };
+    } catch (error) {
+      this.logger.error('Error during phone login', error instanceof Error ? error.stack : String(error));
+      throw error;
+    }
+  }
+
+  /**
+   * Verify phone number with OTP
+   */
+  async verifyPhone(phoneNumber: string, otpCode: string): Promise<{ user: User; message: string }> {
+    try {
+      this.logger.log(`Phone verification attempt for: ${phoneNumber}`);
+
+      // Verify OTP
+      await this.otpService.verifyOtp(phoneNumber, otpCode, 'phone_verification' as any);
+
+      // Find and update user
+      const user = await this.userModel.findOneAndUpdate(
+        { phoneNumber },
+        {
+          isPhoneVerified: true,
+          status: UserStatus.ACTIVE,
+        },
+        { new: true },
+      );
+
+      if (!user) {
+        throw new CustomNotFoundError('User not found');
+      }
+
+      // Send welcome SMS
+      await this.phoneService.sendWelcomeSms(user.phoneNumber, user.firstName);
+
+      this.logger.log(`Phone verified successfully for: ${phoneNumber}`);
+
+      return {
+        user,
+        message: 'Phone number verified successfully. Welcome to Gyaani!',
+      };
+    } catch (error) {
+      this.logger.error('Error verifying phone', error instanceof Error ? error.stack : String(error));
+      throw error;
+    }
+  }
+
+  /**
+   * Request OTP for phone login
+   */
+  async requestPhoneLoginOtp(phoneNumber: string, metadata?: any): Promise<{ message: string }> {
+    try {
+      this.logger.log(`Requesting phone login OTP for: ${phoneNumber}`);
+
+      // Check if user exists
+      const user = await this.userModel.findOne({
+        phoneNumber,
+      });
+
+      if (!user) {
+        throw new CustomNotFoundError('User not found');
+      }
+
+      // Generate OTP
+      const otp = await this.otpService.createOtp(
+        phoneNumber,
+        'phone_login' as any,
+        user._id.toString(),
+        metadata,
+      );
+
+      // Send OTP SMS
+      await this.phoneService.sendOtpSms(
+        phoneNumber,
+        otp.code,
+        'phone_login',
+        user.firstName,
+      );
+
+      this.logger.log(`Phone login OTP sent successfully to: ${phoneNumber}`);
+
+      return {
+        message: 'OTP sent successfully. Please check your phone.',
+      };
+    } catch (error) {
+      this.logger.error('Error requesting phone login OTP', error instanceof Error ? error.stack : String(error));
+      throw error;
+    }
+  }
+
+  /**
+   * Generate temporary password for phone registration
+   */
+  private generateTempPassword(): string {
+    // Generate a random password that user won't need to know
+    // since they'll use OTP for login
+    return Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
   }
 
   /**
@@ -238,8 +452,10 @@ export class AuthService {
         throw new CustomNotFoundError('User not found');
       }
 
-      // Send welcome email
-      await this.emailService.sendWelcomeEmail(user.email, user.firstName);
+      // Send welcome email (only if email exists)
+      if (user.email) {
+        await this.emailService.sendWelcomeEmail(user.email, user.firstName);
+      }
 
       this.logger.log(`Email verified successfully for: ${identifier}`);
 
@@ -368,12 +584,14 @@ export class AuthService {
         passwordResetExpires: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
       });
 
-      // Send reset email
-      await this.emailService.sendPasswordResetEmail(
-        user.email,
-        resetToken,
-        user.firstName,
-      );
+      // Send reset email (only if email exists)
+      if (user.email) {
+        await this.emailService.sendPasswordResetEmail(
+          user.email,
+          resetToken,
+          user.firstName,
+        );
+      }
 
       this.logger.log(`Password reset email sent to: ${forgotPasswordDto.email}`);
 
@@ -438,8 +656,9 @@ export class AuthService {
   }> {
     const payload: JwtPayload = {
       sub: user._id.toString(),
-      email: user.email,
+      phoneNumber: user.phoneNumber,
       role: user.role,
+      ...(user.email && { email: user.email }),
     };
 
     const accessToken = this.jwtService.sign(payload, {

@@ -9,13 +9,15 @@ Gyaani is an educational mobile application that provides structured learning ex
 ## ✨ Features
 
 ### Core Features
-- **User Authentication** - JWT-based authentication with email/OTP login
+- **User Authentication** - JWT-based authentication with email/OTP login and phone-based authentication
+- **Phone Authentication** - Register and login using phone number with SMS OTP verification
 - **User Management** - User registration, profile management, and account verification
 - **Subject Management** - Create and manage learning subjects (Mathematics, Physics, Chemistry, Biology)
 - **Topic Management** - Organize topics within each subject with difficulty levels
 - **Progress Tracking** - Real-time progress calculation and completion tracking
 - **Topic Locking System** - Sequential learning progression with locked/unlocked topics
-- **OTP System** - One-time password generation for email verification and secure login
+- **OTP System** - One-time password generation for email and phone verification and secure login
+- **SMS Integration** - SMS OTP delivery for phone-based authentication (development mode with console logging)
 - **RESTful API** - Clean, consistent API endpoints with proper error handling
 - **MongoDB Integration** - Scalable data persistence with MongoDB Atlas
 - **TypeScript Support** - Type-safe development with full TypeScript integration
@@ -66,6 +68,8 @@ src/
 ├── users/                 # Users module
 │   ├── dto/
 │   │   ├── register.dto.ts
+│   │   ├── phone-register.dto.ts
+│   │   ├── phone-login.dto.ts
 │   │   ├── login.dto.ts
 │   │   ├── otp.dto.ts
 │   │   └── update-user.dto.ts
@@ -75,7 +79,8 @@ src/
 │   ├── services/
 │   │   ├── auth.service.ts
 │   │   ├── otp.service.ts
-│   │   └── email.service.ts
+│   │   ├── email.service.ts
+│   │   └── phone.service.ts
 │   ├── controllers/
 │   │   └── auth.controller.ts
 │   ├── guards/
@@ -200,11 +205,15 @@ All API responses follow this consistent format:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/register` | Register new user with email |
+| POST | `/api/auth/register/phone` | Register new user with phone number |
 | POST | `/api/auth/login` | Login with email/phone + password |
 | POST | `/api/auth/login/otp` | Login with OTP |
+| POST | `/api/auth/login/phone` | Login with phone number + OTP |
 | POST | `/api/auth/request-login-otp` | Request OTP for login |
+| POST | `/api/auth/request-phone-login-otp` | Request OTP for phone login |
 | POST | `/api/auth/verify-email` | Verify email with OTP |
+| POST | `/api/auth/verify-phone` | Verify phone number with OTP |
 | POST | `/api/auth/forgot-password` | Request password reset |
 | POST | `/api/auth/reset-password` | Reset password with token |
 | POST | `/api/auth/change-password` | Change password (authenticated) |
@@ -252,7 +261,7 @@ All API responses follow this consistent format:
 
 #### Authentication
 
-**Register User**
+**Register User with Email**
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
@@ -261,6 +270,17 @@ curl -X POST http://localhost:3000/api/auth/register \
     "firstName": "John",
     "lastName": "Doe",
     "password": "Password123!",
+    "phoneNumber": "+1234567890"
+  }'
+```
+
+**Register User with Phone**
+```bash
+curl -X POST http://localhost:3000/api/auth/register/phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
     "phoneNumber": "+1234567890"
   }'
 ```
@@ -290,6 +310,34 @@ curl -X POST http://localhost:3000/api/auth/login/otp \
   -H "Content-Type: application/json" \
   -d '{
     "identifier": "user@example.com",
+    "otpCode": "123456"
+  }'
+```
+
+**Phone Login Flow**
+```bash
+# Step 1: Request phone login OTP
+curl -X POST http://localhost:3000/api/auth/request-phone-login-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phoneNumber": "+1234567890"
+  }'
+
+# Step 2: Login with phone and OTP
+curl -X POST http://localhost:3000/api/auth/login/phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phoneNumber": "+1234567890",
+    "otpCode": "123456"
+  }'
+```
+
+**Verify Phone Number**
+```bash
+curl -X POST http://localhost:3000/api/auth/verify-phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phoneNumber": "+1234567890",
     "otpCode": "123456"
   }'
 ```
@@ -344,22 +392,33 @@ curl -X POST http://localhost:3000/api/topics \
 ## 🔐 Authentication Flow
 
 ### User Registration & Verification
+
+#### Email-Based Registration
 1. **Register**: User provides email, password, and personal details
 2. **Email Verification**: System sends OTP to user's email
 3. **OTP Verification**: User enters OTP to activate account
 4. **Account Active**: User can now login and access the platform
 
+#### Phone-Based Registration
+1. **Register**: User provides name and phone number only
+2. **SMS Verification**: System sends OTP to user's phone via SMS
+3. **OTP Verification**: User enters OTP to activate account
+4. **Account Active**: User can now login using phone + OTP
+
 ### Login Methods
 1. **Password Login**: Traditional email/phone + password authentication
-2. **OTP Login**: Passwordless login using OTP sent to email/phone
-3. **JWT Tokens**: Secure access and refresh tokens for API authentication
+2. **Email OTP Login**: Passwordless login using OTP sent to email
+3. **Phone OTP Login**: Passwordless login using OTP sent to phone via SMS
+4. **JWT Tokens**: Secure access and refresh tokens for API authentication
 
 ### Security Features
 - **Password Hashing**: bcrypt with 12+ rounds
 - **JWT Tokens**: 15-minute access tokens, 7-day refresh tokens
 - **OTP System**: 6-digit codes with 10-minute expiration
 - **Rate Limiting**: Prevents brute force attacks
-- **Email Verification**: Required for account activation
+- **Email Verification**: Required for email-based accounts
+- **Phone Verification**: Required for phone-based accounts
+- **SMS Integration**: Secure OTP delivery via SMS (development mode with console logging)
 
 ## 📊 Data Models
 
@@ -367,11 +426,11 @@ curl -X POST http://localhost:3000/api/topics \
 ```typescript
 {
   _id: ObjectId,
-  email: string,              // User email (unique)
+  email?: string,             // User email (optional, unique when present)
   password: string,           // Hashed password
   firstName: string,          // User's first name
   lastName: string,           // User's last name
-  phoneNumber?: string,       // Optional phone number
+  phoneNumber: string,        // Phone number (required, unique)
   role: string,               // User role (student, admin, etc.)
   status: string,             // Account status (pending, active, suspended)
   isEmailVerified: boolean,   // Email verification status
@@ -400,7 +459,7 @@ curl -X POST http://localhost:3000/api/topics \
   _id: ObjectId,
   identifier: string,         // Email or phone number
   code: string,              // 6-digit OTP code
-  type: string,              // email_verification, login, password_reset
+  type: string,              // email_verification, phone_verification, login, phone_login, password_reset
   status: string,            // pending, verified, expired
   expiresAt: Date,           // Expiration timestamp
   attempts: number,          // Number of verification attempts
@@ -587,6 +646,7 @@ curl http://localhost:3000/api/subjects/Mathematics/topics
 
 - **Complete Guide**: See `POSTMAN_TESTING_GUIDE.md` for detailed testing instructions
 - **Quick Start**: See `QUICK_START_POSTMAN.md` for 5-minute setup
+- **Phone Auth Integration**: See `FRONTEND_PHONE_AUTH_INTEGRATION_GUIDE.md` for phone authentication integration
 - **React Native Integration**: See `REACT_NATIVE_INTEGRATION.md` for mobile app integration
 - **Postman Collection**: Import `Gyaani_Backend_API.postman_collection.json` for ready-to-use API tests
 
@@ -596,6 +656,7 @@ curl http://localhost:3000/api/subjects/Mathematics/topics
 |------|---------|
 | `POSTMAN_TESTING_GUIDE.md` | Comprehensive step-by-step testing guide |
 | `QUICK_START_POSTMAN.md` | 5-minute quick start for testing |
+| `FRONTEND_PHONE_AUTH_INTEGRATION_GUIDE.md` | Phone authentication integration guide |
 | `Gyaani_Backend_API.postman_collection.json` | Ready-to-import Postman collection |
 | `REACT_NATIVE_INTEGRATION.md` | Mobile app integration guide |
 | `QUICK_REFERENCE.md` | Quick reference for API changes |
@@ -665,6 +726,12 @@ All errors follow a consistent format:
    - Ensure OTP hasn't expired (10 minutes)
    - Wait 1 minute between OTP requests
    - Check rate limiting settings
+
+8. **Phone Authentication Issues**
+   - Ensure phone number is in international format (+1234567890)
+   - Check server logs for SMS OTP codes in development mode
+   - Verify phone number is unique (not already registered)
+   - Ensure phone verification is completed before login
 
 
 ## 🙏 Acknowledgments

@@ -12,6 +12,8 @@ import { AuthService } from '../services/auth.service';
 import { OtpService } from '../services/otp.service';
 import { 
   RegisterDto, 
+  PhoneRegisterDto,
+  PhoneLoginDto,
   LoginDto, 
   LoginWithOtpDto, 
   ChangePasswordDto, 
@@ -54,6 +56,94 @@ export class AuthController {
       meta: {
         timestamp: new Date().toISOString(),
         requestId: `register_${Date.now()}`,
+        version: '1.0.0',
+      },
+    };
+  }
+
+  @Public()
+  @Post('register/phone')
+  @HttpCode(HttpStatus.CREATED)
+  async registerWithPhone(
+    @Body() registerDto: PhoneRegisterDto,
+    @Req() req: any,
+  ): Promise<ApiResponse<{ user: User; message: string }>> {
+    const metadata = {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    };
+
+    const result = await this.authService.registerWithPhone(registerDto, metadata);
+    
+    return {
+      success: true,
+      data: result,
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: `register_phone_${Date.now()}`,
+        version: '1.0.0',
+      },
+    };
+  }
+
+  @Public()
+  @Post('login/phone')
+  @HttpCode(HttpStatus.OK)
+  async loginWithPhone(
+    @Body() loginDto: PhoneLoginDto,
+  ): Promise<ApiResponse<any>> {
+    const result = await this.authService.loginWithPhone(loginDto);
+    
+    return {
+      success: true,
+      data: result,
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: `login_phone_${Date.now()}`,
+        version: '1.0.0',
+      },
+    };
+  }
+
+  @Public()
+  @Post('verify-phone')
+  @HttpCode(HttpStatus.OK)
+  async verifyPhone(
+    @Body() body: { phoneNumber: string; otpCode: string },
+  ): Promise<ApiResponse<{ user: User; message: string }>> {
+    const result = await this.authService.verifyPhone(body.phoneNumber, body.otpCode);
+    
+    return {
+      success: true,
+      data: result,
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: `verify_phone_${Date.now()}`,
+        version: '1.0.0',
+      },
+    };
+  }
+
+  @Public()
+  @Post('request-phone-login-otp')
+  @HttpCode(HttpStatus.OK)
+  async requestPhoneLoginOtp(
+    @Body() body: { phoneNumber: string },
+    @Req() req: any,
+  ): Promise<ApiResponse<{ message: string }>> {
+    const metadata = {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    };
+
+    const result = await this.authService.requestPhoneLoginOtp(body.phoneNumber, metadata);
+    
+    return {
+      success: true,
+      data: result,
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: `request_phone_login_otp_${Date.now()}`,
         version: '1.0.0',
       },
     };

@@ -8,6 +8,7 @@ import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
 import { OtpService } from './services/otp.service';
 import { EmailService } from './services/email.service';
+import { PhoneService } from './services/phone.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
@@ -31,6 +32,7 @@ import { RolesGuard } from './guards/roles.guard';
     AuthService,
     OtpService,
     EmailService,
+    PhoneService,
     JwtStrategy,
     JwtAuthGuard,
     RolesGuard,
@@ -39,6 +41,7 @@ import { RolesGuard } from './guards/roles.guard';
     AuthService,
     OtpService,
     EmailService,
+    PhoneService,
     JwtAuthGuard,
     RolesGuard,
   ],

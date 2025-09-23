@@ -20,8 +20,8 @@ export enum UserStatus {
 export class User {
   _id!: Types.ObjectId;
 
-  @Prop({ required: true, unique: true })
-  email!: string;
+  @Prop({ unique: true, sparse: true })
+  email?: string;
 
   @Prop({ required: true })
   firstName!: string;
