@@ -28,17 +28,17 @@ export class Otp {
   @Prop({ required: true })
   identifier!: string; // email or phone number
 
-  @Prop({ 
-    type: String, 
-    enum: OtpType, 
-    required: true 
+  @Prop({
+    type: String,
+    enum: OtpType,
+    required: true,
   })
   type!: OtpType;
 
-  @Prop({ 
-    type: String, 
-    enum: OtpStatus, 
-    default: OtpStatus.PENDING 
+  @Prop({
+    type: String,
+    enum: OtpStatus,
+    default: OtpStatus.PENDING,
   })
   status!: OtpStatus;
 

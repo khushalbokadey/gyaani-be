@@ -3,7 +3,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Otp, OtpDocument, OtpType, OtpStatus } from '../schemas/otp.schema';
 import { LoggerService } from '../../core/logging/logger.service';
-import { ConflictError, ValidationError, NotFoundError } from '../../shared/errors/application.error';
+import {
+  ConflictError,
+  ValidationError,
+  NotFoundError,
+} from '../../shared/errors/application.error';
 
 @Injectable()
 export class OtpService {
@@ -47,7 +51,8 @@ export class OtpService {
       if (existingOtp) {
         // If OTP was created less than 1 minute ago, don't create a new one
         const timeDiff = Date.now() - (existingOtp as any).createdAt.getTime();
-        if (timeDiff < 60000) { // 1 minute
+        if (timeDiff < 60000) {
+          // 1 minute
           throw new ConflictError('Please wait before requesting a new OTP');
         }
 
@@ -81,7 +86,10 @@ export class OtpService {
 
       return savedOtp;
     } catch (error) {
-      this.logger.error('Error creating OTP', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error creating OTP',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -114,7 +122,10 @@ export class OtpService {
         await this.otpModel.findByIdAndUpdate(otp._id, {
           status: OtpStatus.EXPIRED,
         });
-        throw new ValidationError('Maximum verification attempts exceeded', 'otp');
+        throw new ValidationError(
+          'Maximum verification attempts exceeded',
+          'otp',
+        );
       }
 
       // Increment attempts
@@ -131,7 +142,10 @@ export class OtpService {
       this.logger.log(`OTP verified successfully for ${identifier}`);
       return otp;
     } catch (error) {
-      this.logger.error('Error verifying OTP', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error verifying OTP',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -162,7 +176,10 @@ export class OtpService {
       // Create new OTP
       return this.createOtp(identifier, type, undefined, metadata);
     } catch (error) {
-      this.logger.error('Error resending OTP', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error resending OTP',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -172,14 +189,19 @@ export class OtpService {
    */
   async getOtp(identifier: string, type: OtpType): Promise<Otp | null> {
     try {
-      return this.otpModel.findOne({
-        identifier,
-        type,
-        status: OtpStatus.PENDING,
-        expiresAt: { $gt: new Date() },
-      }).sort({ createdAt: -1 });
+      return this.otpModel
+        .findOne({
+          identifier,
+          type,
+          status: OtpStatus.PENDING,
+          expiresAt: { $gt: new Date() },
+        })
+        .sort({ createdAt: -1 });
     } catch (error) {
-      this.logger.error('Error getting OTP', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error getting OTP',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -202,7 +224,10 @@ export class OtpService {
       this.logger.log(`Cleaned up ${result.modifiedCount} expired OTPs`);
       return result.modifiedCount;
     } catch (error) {
-      this.logger.error('Error cleaning up expired OTPs', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error cleaning up expired OTPs',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -210,7 +235,10 @@ export class OtpService {
   /**
    * Get OTP statistics
    */
-  async getOtpStats(identifier: string, type: OtpType): Promise<{
+  async getOtpStats(
+    identifier: string,
+    type: OtpType,
+  ): Promise<{
     totalAttempts: number;
     recentAttempts: number;
     lastAttempt: Date | null;
@@ -220,12 +248,13 @@ export class OtpService {
 
       const [totalAttempts, recentAttempts, lastAttempt] = await Promise.all([
         this.otpModel.countDocuments({ identifier, type }),
-        this.otpModel.countDocuments({ 
-          identifier, 
-          type, 
-          createdAt: { $gte: recentTime } 
+        this.otpModel.countDocuments({
+          identifier,
+          type,
+          createdAt: { $gte: recentTime },
         }),
-        this.otpModel.findOne({ identifier, type })
+        this.otpModel
+          .findOne({ identifier, type })
           .sort({ createdAt: -1 })
           .select('createdAt')
           .lean(),
@@ -237,7 +266,10 @@ export class OtpService {
         lastAttempt: (lastAttempt as any)?.createdAt || null,
       };
     } catch (error) {
-      this.logger.error('Error getting OTP stats', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error getting OTP stats',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }

@@ -35,11 +35,14 @@ export class EmailService {
       this.logger.log(`Content: OTP email content`);
 
       // Simulate email sending delay
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       this.logger.log(`OTP email sent successfully to ${email}`);
     } catch (error) {
-      this.logger.error('Error sending OTP email', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error sending OTP email',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -60,10 +63,13 @@ export class EmailService {
       this.logger.log(`Subject: ${subject}`);
       this.logger.log(`Content: Welcome email content`);
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       this.logger.log(`Welcome email sent successfully to ${email}`);
     } catch (error) {
-      this.logger.error('Error sending welcome email', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error sending welcome email',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -88,10 +94,13 @@ export class EmailService {
       this.logger.log(`Subject: ${subject}`);
       this.logger.log(`Reset URL: ${resetUrl}`);
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       this.logger.log(`Password reset email sent successfully to ${email}`);
     } catch (error) {
-      this.logger.error('Error sending password reset email', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error sending password reset email',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -111,7 +120,11 @@ export class EmailService {
     }
   }
 
-  private generateOtpEmailHtml(otpCode: string, type: OtpType, firstName?: string): string {
+  private generateOtpEmailHtml(
+    otpCode: string,
+    type: OtpType,
+    firstName?: string,
+  ): string {
     const greeting = firstName ? `Hi ${firstName}` : 'Hello';
     const purpose = this.getOtpPurpose(type);
 
@@ -165,7 +178,11 @@ export class EmailService {
     `;
   }
 
-  private generateOtpEmailText(otpCode: string, type: OtpType, firstName?: string): string {
+  private generateOtpEmailText(
+    otpCode: string,
+    type: OtpType,
+    firstName?: string,
+  ): string {
     const greeting = firstName ? `Hi ${firstName}` : 'Hello';
     const purpose = this.getOtpPurpose(type);
 
@@ -269,7 +286,10 @@ The Gyaani Team
     `;
   }
 
-  private generatePasswordResetEmailHtml(resetUrl: string, firstName?: string): string {
+  private generatePasswordResetEmailHtml(
+    resetUrl: string,
+    firstName?: string,
+  ): string {
     const greeting = firstName ? `Hi ${firstName}` : 'Hello';
 
     return `
@@ -320,7 +340,10 @@ The Gyaani Team
     `;
   }
 
-  private generatePasswordResetEmailText(resetUrl: string, firstName?: string): string {
+  private generatePasswordResetEmailText(
+    resetUrl: string,
+    firstName?: string,
+  ): string {
     const greeting = firstName ? `Hi ${firstName}` : 'Hello';
 
     return `

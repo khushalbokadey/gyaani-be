@@ -9,7 +9,7 @@ export class HealthCheckController {
   @Get()
   async check(): Promise<ApiResponse<HealthCheckResult>> {
     const health = await this.healthCheckService.getOverallHealth();
-    
+
     return {
       success: true,
       data: health,
@@ -25,7 +25,7 @@ export class HealthCheckController {
   async readiness(): Promise<ApiResponse<{ status: string }>> {
     const health = await this.healthCheckService.getOverallHealth();
     const isReady = health.status === 'healthy' || health.status === 'degraded';
-    
+
     return {
       success: isReady,
       data: { status: isReady ? 'ready' : 'not ready' },

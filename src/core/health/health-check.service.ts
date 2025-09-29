@@ -19,9 +19,7 @@ export interface HealthCheckResult {
 
 @Injectable()
 export class HealthCheckService {
-  constructor(
-    @InjectConnection() private readonly connection: Connection,
-  ) {}
+  constructor(@InjectConnection() private readonly connection: Connection) {}
 
   async checkDatabase(): Promise<HealthStatus> {
     try {
@@ -60,8 +58,12 @@ export class HealthCheckService {
     };
 
     const heapUsedPercentage = (memUsage.heapUsed / memUsage.heapTotal) * 100;
-    const status = heapUsedPercentage > 90 ? 'unhealthy' : 
-                  heapUsedPercentage > 70 ? 'degraded' : 'healthy';
+    const status =
+      heapUsedPercentage > 90
+        ? 'unhealthy'
+        : heapUsedPercentage > 70
+          ? 'degraded'
+          : 'healthy';
 
     return {
       status,
@@ -76,7 +78,7 @@ export class HealthCheckService {
     try {
       const fs = require('fs');
       const stats = fs.statSync('.');
-      
+
       return {
         status: 'healthy',
         message: 'Disk space check passed',
@@ -110,11 +112,13 @@ export class HealthCheckService {
       disk,
     };
 
-    const overallStatus = Object.values(checks).every(check => check.status === 'healthy')
+    const overallStatus = Object.values(checks).every(
+      (check) => check.status === 'healthy',
+    )
       ? 'healthy'
-      : Object.values(checks).some(check => check.status === 'unhealthy')
-      ? 'unhealthy'
-      : 'degraded';
+      : Object.values(checks).some((check) => check.status === 'unhealthy')
+        ? 'unhealthy'
+        : 'degraded';
 
     return {
       status: overallStatus,

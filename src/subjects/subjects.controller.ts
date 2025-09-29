@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { SubjectsService } from './subjects.service';
 import { CreateSubjectDto } from './dto/create-subject.dto';
 import { UpdateSubjectDto } from './dto/update-subject.dto';
@@ -37,8 +45,11 @@ export class SubjectsController {
   }
 
   @Get(':name/topics')
-  async getSubjectTopics(@Param('name') name: string): Promise<ApiResponse<any>> {
-    const subjectWithTopics = await this.subjectsService.findByNameWithTopics(name);
+  async getSubjectTopics(
+    @Param('name') name: string,
+  ): Promise<ApiResponse<any>> {
+    const subjectWithTopics =
+      await this.subjectsService.findByNameWithTopics(name);
     return {
       success: true,
       data: subjectWithTopics,
@@ -51,7 +62,9 @@ export class SubjectsController {
   }
 
   @Post()
-  async create(@Body() createSubjectDto: CreateSubjectDto): Promise<ApiResponse<any>> {
+  async create(
+    @Body() createSubjectDto: CreateSubjectDto,
+  ): Promise<ApiResponse<any>> {
     const subject = await this.subjectsService.create(createSubjectDto);
     return {
       success: true,
@@ -65,7 +78,10 @@ export class SubjectsController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateSubjectDto: UpdateSubjectDto): Promise<ApiResponse<any>> {
+  async update(
+    @Param('id') id: string,
+    @Body() updateSubjectDto: UpdateSubjectDto,
+  ): Promise<ApiResponse<any>> {
     const subject = await this.subjectsService.update(id, updateSubjectDto);
     return {
       success: true,

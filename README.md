@@ -12,8 +12,9 @@ Gyaani is an educational mobile application that provides structured learning ex
 - **User Authentication** - JWT-based authentication with email/OTP login and phone-based authentication
 - **Phone Authentication** - Register and login using phone number with SMS OTP verification
 - **User Management** - User registration, profile management, and account verification
-- **Subject Management** - Create and manage learning subjects (Mathematics, Physics, Chemistry, Biology)
+- **Subject Management** - Create and manage learning subjects (Mathematics, Physics, Chemistry, Biology, Current Affairs)
 - **Topic Management** - Organize topics within each subject with difficulty levels
+- **Current Affairs System** - Comprehensive current affairs questions with MCQ format, explanations, and event tracking
 - **Progress Tracking** - Real-time progress calculation and completion tracking
 - **Topic Locking System** - Sequential learning progression with locked/unlocked topics
 - **OTP System** - One-time password generation for email and phone verification and secure login
@@ -32,10 +33,12 @@ Gyaani is an educational mobile application that provides structured learning ex
 - **Request Validation** - Input validation using class-validator decorators
 
 ### Educational Features
-- **Difficulty Levels** - Easy, Medium, Hard categorization for topics
+- **Difficulty Levels** - Easy, Medium, Hard categorization for topics and questions
 - **Study Time Estimation** - Estimated completion time for each topic
 - **Lesson Tracking** - Track completed lessons and total lessons per topic
 - **Question Bank** - Track total questions available for each topic
+- **Current Affairs Questions** - MCQ format with 4 options, explanations, and source attribution
+- **Event Tracking** - Track event dates and sources for current affairs questions
 - **Progress Analytics** - Calculate and track learning progress across subjects
 
 ## 🛠️ Tech Stack
@@ -102,15 +105,24 @@ src/
 │   ├── subjects.controller.ts
 │   ├── subjects.service.ts
 │   └── subjects.module.ts
-└── topics/                # Topics module
+├── topics/                # Topics module
+│   ├── dto/
+│   │   ├── create-topic.dto.ts
+│   │   └── update-topic.dto.ts
+│   ├── schemas/
+│   │   └── topic.schema.ts
+│   ├── topics.controller.ts
+│   ├── topics.service.ts
+│   └── topics.module.ts
+└── current-affairs/       # Current Affairs module
     ├── dto/
-    │   ├── create-topic.dto.ts
-    │   └── update-topic.dto.ts
+    │   ├── create-current-affairs-question.dto.ts
+    │   └── update-current-affairs-question.dto.ts
     ├── schemas/
-    │   └── topic.schema.ts
-    ├── topics.controller.ts
-    ├── topics.service.ts
-    └── topics.module.ts
+    │   └── current-affairs-question.schema.ts
+    ├── current-affairs.controller.ts
+    ├── current-affairs.service.ts
+    └── current-affairs.module.ts
 ```
 
 ## 🚀 Getting Started
@@ -248,6 +260,19 @@ All API responses follow this consistent format:
 | POST | `/api/topics` | Create a new topic |
 | PATCH | `/api/topics/:id` | Update a topic |
 | DELETE | `/api/topics/:id` | Delete a topic |
+
+#### Current Affairs
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/current-affairs/questions` | Get all current affairs questions |
+| GET | `/api/current-affairs/questions/:id` | Get specific question by ID |
+| GET | `/api/current-affairs/questions/topic/:topicId` | Get questions by topic |
+| GET | `/api/current-affairs/questions/stats` | Get question statistics |
+| POST | `/api/current-affairs/questions` | Create single question (Admin) |
+| POST | `/api/current-affairs/questions/bulk` | Create multiple questions (Admin) |
+| PATCH | `/api/current-affairs/questions/:id` | Update question (Admin) |
+| DELETE | `/api/current-affairs/questions/:id` | Delete question (Admin) |
 
 #### Health Check
 
@@ -389,6 +414,65 @@ curl -X POST http://localhost:3000/api/topics \
   }'
 ```
 
+#### Current Affairs Questions
+
+**Get All Current Affairs Questions**
+```bash
+curl http://localhost:3000/api/current-affairs/questions
+```
+
+**Get Questions by Topic**
+```bash
+curl http://localhost:3000/api/current-affairs/questions/topic/TOPIC_ID_HERE
+```
+
+**Get Question Statistics**
+```bash
+curl http://localhost:3000/api/current-affairs/questions/stats
+```
+
+**Create Single Question (Admin)**
+```bash
+curl -X POST http://localhost:3000/api/current-affairs/questions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "question": "Which country hosted the 2024 Summer Olympics?",
+    "options": [
+      {"text": "Tokyo", "isCorrect": false},
+      {"text": "Paris", "isCorrect": true},
+      {"text": "Los Angeles", "isCorrect": false},
+      {"text": "London", "isCorrect": false}
+    ],
+    "explanation": "Paris hosted the 2024 Summer Olympics.",
+    "eventDate": "2024-07-26T00:00:00.000Z",
+    "source": "IOC",
+    "sourceUrl": "https://olympics.com",
+    "difficulty": "easy",
+    "topicId": "TOPIC_ID_HERE"
+  }'
+```
+
+**Create Multiple Questions (Admin)**
+```bash
+curl -X POST http://localhost:3000/api/current-affairs/questions/bulk \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "questions": [
+      {
+        "question": "Question 1?",
+        "options": [...],
+        "explanation": "Explanation 1",
+        "eventDate": "2024-01-01T00:00:00.000Z",
+        "source": "Source 1",
+        "difficulty": "easy",
+        "topicId": "TOPIC_ID_HERE"
+      }
+    ]
+  }'
+```
+
 ## 🔐 Authentication Flow
 
 ### User Registration & Verification
@@ -509,6 +593,30 @@ curl -X POST http://localhost:3000/api/topics \
 }
 ```
 
+### Current Affairs Question Schema
+```typescript
+{
+  _id: ObjectId,
+  question: string,          // Question text
+  options: Array<{           // Answer options
+    text: string,            // Option text
+    isCorrect: boolean       // Whether this option is correct
+  }>,
+  explanation: string,       // Detailed explanation
+  eventDate: Date,           // Date of the event
+  source: string,            // Source of information
+  sourceUrl?: string,        // Optional source URL
+  difficulty: string,        // easy, medium, hard
+  isActive: boolean,         // Whether question is active
+  topicId: ObjectId,         // Reference to topic
+  category?: string,         // Optional category
+  tags?: string[],           // Optional tags
+  priority?: number,         // Optional priority
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
 ## 🎮 Sample Data
 
 The backend comes with pre-populated sample data:
@@ -518,6 +626,7 @@ The backend comes with pre-populated sample data:
 - **Physics** (Green) - 4 topics, 45% progress  
 - **Chemistry** (Purple) - 4 topics, 55% progress
 - **Biology** (Orange) - 4 topics, 60% progress
+- **Current Affairs** (Orange) - 1 topic, 20 questions available
 
 ### Sample Topics
 Each subject contains topics with varying difficulty levels:
@@ -525,6 +634,13 @@ Each subject contains topics with varying difficulty levels:
 - **Medium Topics** - Intermediate concepts, moderate study time
 - **Hard Topics** - Advanced concepts, longer study time
 - **Locked Topics** - Sequential progression system
+
+### Current Affairs Questions
+- **20 Questions Available** - Mix of easy, medium, and hard difficulty
+- **MCQ Format** - 4 options per question with exactly one correct answer
+- **Event Tracking** - Questions linked to recent events with dates and sources
+- **Comprehensive Explanations** - Detailed explanations for each answer
+- **Source Attribution** - Proper attribution to news sources and organizations
 
 ## 🔧 Development
 
@@ -640,6 +756,12 @@ curl http://localhost:3000/api/subjects
 
 # Get specific subject topics
 curl http://localhost:3000/api/subjects/Mathematics/topics
+
+# Get current affairs questions
+curl http://localhost:3000/api/current-affairs/questions
+
+# Get current affairs questions by topic
+curl http://localhost:3000/api/current-affairs/questions/topic/TOPIC_ID_HERE
 ```
 
 ### Testing Documentation
@@ -734,9 +856,4 @@ All errors follow a consistent format:
    - Ensure phone verification is completed before login
 
 
-## 🙏 Acknowledgments
-
-- NestJS team for the amazing framework
-- MongoDB team for the database solution
-- The open-source community for various packages
 

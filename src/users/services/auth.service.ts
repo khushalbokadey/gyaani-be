@@ -7,9 +7,22 @@ import { User, UserDocument, UserStatus } from '../schemas/user.schema';
 import { OtpService } from './otp.service';
 import { EmailService } from './email.service';
 import { PhoneService } from './phone.service';
-import { RegisterDto, PhoneRegisterDto, PhoneLoginDto, LoginDto, LoginWithOtpDto, ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from '../dto';
+import {
+  RegisterDto,
+  PhoneRegisterDto,
+  PhoneLoginDto,
+  LoginDto,
+  LoginWithOtpDto,
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from '../dto';
 import { LoggerService } from '../../core/logging/logger.service';
-import { ConflictError as CustomConflictError, ValidationError as CustomValidationError, NotFoundError as CustomNotFoundError } from '../../shared/errors/application.error';
+import {
+  ConflictError as CustomConflictError,
+  ValidationError as CustomValidationError,
+  NotFoundError as CustomNotFoundError,
+} from '../../shared/errors/application.error';
 
 export interface AuthResult {
   user: User;
@@ -41,7 +54,10 @@ export class AuthService {
   /**
    * Register a new user
    */
-  async register(registerDto: RegisterDto, metadata?: any): Promise<{ user: User; message: string }> {
+  async register(
+    registerDto: RegisterDto,
+    metadata?: any,
+  ): Promise<{ user: User; message: string }> {
     try {
       this.logger.log(`Registering new user: ${registerDto.email}`);
 
@@ -58,13 +74,18 @@ export class AuthService {
           throw new CustomConflictError('User with this email already exists');
         }
         if (existingUser.phoneNumber === registerDto.phoneNumber) {
-          throw new CustomConflictError('User with this phone number already exists');
+          throw new CustomConflictError(
+            'User with this phone number already exists',
+          );
         }
       }
 
       // Hash password
       const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || '12');
-      const hashedPassword = await bcrypt.hash(registerDto.password, saltRounds);
+      const hashedPassword = await bcrypt.hash(
+        registerDto.password,
+        saltRounds,
+      );
 
       // Create user
       const user = new this.userModel({
@@ -108,10 +129,14 @@ export class AuthService {
 
       return {
         user: savedUser,
-        message: 'Registration successful. Please check your email for verification code.',
+        message:
+          'Registration successful. Please check your email for verification code.',
       };
     } catch (error) {
-      this.logger.error('Error registering user', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error registering user',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -119,9 +144,14 @@ export class AuthService {
   /**
    * Register a new user with phone number only
    */
-  async registerWithPhone(registerDto: PhoneRegisterDto, metadata?: any): Promise<{ user: User; message: string }> {
+  async registerWithPhone(
+    registerDto: PhoneRegisterDto,
+    metadata?: any,
+  ): Promise<{ user: User; message: string }> {
     try {
-      this.logger.log(`Registering new user with phone: ${registerDto.phoneNumber}`);
+      this.logger.log(
+        `Registering new user with phone: ${registerDto.phoneNumber}`,
+      );
 
       // Check if user already exists
       const existingUser = await this.userModel.findOne({
@@ -129,7 +159,9 @@ export class AuthService {
       });
 
       if (existingUser) {
-        throw new CustomConflictError('User with this phone number already exists');
+        throw new CustomConflictError(
+          'User with this phone number already exists',
+        );
       }
 
       // Generate a temporary password (user will use OTP for login)
@@ -176,14 +208,20 @@ export class AuthService {
         registerDto.firstName,
       );
 
-      this.logger.log(`User registered with phone successfully: ${savedUser._id}`);
+      this.logger.log(
+        `User registered with phone successfully: ${savedUser._id}`,
+      );
 
       return {
         user: savedUser,
-        message: 'Registration successful. Please check your phone for verification code.',
+        message:
+          'Registration successful. Please check your phone for verification code.',
       };
     } catch (error) {
-      this.logger.error('Error registering user with phone', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error registering user with phone',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -213,7 +251,9 @@ export class AuthService {
 
       // Check if user is active
       if (user.status !== UserStatus.ACTIVE) {
-        throw new UnauthorizedException('Account is not active. Please verify your phone number first.');
+        throw new UnauthorizedException(
+          'Account is not active. Please verify your phone number first.',
+        );
       }
 
       // Update last login
@@ -231,7 +271,10 @@ export class AuthService {
         ...tokens,
       };
     } catch (error) {
-      this.logger.error('Error during phone login', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error during phone login',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -239,12 +282,19 @@ export class AuthService {
   /**
    * Verify phone number with OTP
    */
-  async verifyPhone(phoneNumber: string, otpCode: string): Promise<{ user: User; message: string }> {
+  async verifyPhone(
+    phoneNumber: string,
+    otpCode: string,
+  ): Promise<{ user: User; message: string }> {
     try {
       this.logger.log(`Phone verification attempt for: ${phoneNumber}`);
 
       // Verify OTP
-      await this.otpService.verifyOtp(phoneNumber, otpCode, 'phone_verification' as any);
+      await this.otpService.verifyOtp(
+        phoneNumber,
+        otpCode,
+        'phone_verification' as any,
+      );
 
       // Find and update user
       const user = await this.userModel.findOneAndUpdate(
@@ -270,7 +320,10 @@ export class AuthService {
         message: 'Phone number verified successfully. Welcome to Gyaani!',
       };
     } catch (error) {
-      this.logger.error('Error verifying phone', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error verifying phone',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -278,7 +331,10 @@ export class AuthService {
   /**
    * Request OTP for phone login
    */
-  async requestPhoneLoginOtp(phoneNumber: string, metadata?: any): Promise<{ message: string }> {
+  async requestPhoneLoginOtp(
+    phoneNumber: string,
+    metadata?: any,
+  ): Promise<{ message: string }> {
     try {
       this.logger.log(`Requesting phone login OTP for: ${phoneNumber}`);
 
@@ -313,7 +369,10 @@ export class AuthService {
         message: 'OTP sent successfully. Please check your phone.',
       };
     } catch (error) {
-      this.logger.error('Error requesting phone login OTP', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error requesting phone login OTP',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -324,7 +383,10 @@ export class AuthService {
   private generateTempPassword(): string {
     // Generate a random password that user won't need to know
     // since they'll use OTP for login
-    return Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
+    return (
+      Math.random().toString(36).slice(-12) +
+      Math.random().toString(36).slice(-12)
+    );
   }
 
   /**
@@ -348,11 +410,16 @@ export class AuthService {
 
       // Check if user is active
       if (user.status !== UserStatus.ACTIVE) {
-        throw new UnauthorizedException('Account is not active. Please verify your email first.');
+        throw new UnauthorizedException(
+          'Account is not active. Please verify your email first.',
+        );
       }
 
       // Verify password
-      const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+      const isPasswordValid = await bcrypt.compare(
+        loginDto.password,
+        user.password,
+      );
       if (!isPasswordValid) {
         throw new UnauthorizedException('Invalid credentials');
       }
@@ -372,7 +439,10 @@ export class AuthService {
         ...tokens,
       };
     } catch (error) {
-      this.logger.error('Error during login', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error during login',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -405,7 +475,9 @@ export class AuthService {
 
       // Check if user is active
       if (user.status !== UserStatus.ACTIVE) {
-        throw new UnauthorizedException('Account is not active. Please verify your email first.');
+        throw new UnauthorizedException(
+          'Account is not active. Please verify your email first.',
+        );
       }
 
       // Update last login
@@ -423,7 +495,10 @@ export class AuthService {
         ...tokens,
       };
     } catch (error) {
-      this.logger.error('Error during OTP login', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error during OTP login',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -431,12 +506,19 @@ export class AuthService {
   /**
    * Verify email with OTP
    */
-  async verifyEmail(identifier: string, otpCode: string): Promise<{ user: User; message: string }> {
+  async verifyEmail(
+    identifier: string,
+    otpCode: string,
+  ): Promise<{ user: User; message: string }> {
     try {
       this.logger.log(`Email verification attempt for: ${identifier}`);
 
       // Verify OTP
-      await this.otpService.verifyOtp(identifier, otpCode, 'email_verification' as any);
+      await this.otpService.verifyOtp(
+        identifier,
+        otpCode,
+        'email_verification' as any,
+      );
 
       // Find and update user
       const user = await this.userModel.findOneAndUpdate(
@@ -464,7 +546,10 @@ export class AuthService {
         message: 'Email verified successfully. Welcome to Gyaani!',
       };
     } catch (error) {
-      this.logger.error('Error verifying email', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error verifying email',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -472,16 +557,16 @@ export class AuthService {
   /**
    * Request OTP for login
    */
-  async requestLoginOtp(identifier: string, metadata?: any): Promise<{ message: string }> {
+  async requestLoginOtp(
+    identifier: string,
+    metadata?: any,
+  ): Promise<{ message: string }> {
     try {
       this.logger.log(`Requesting login OTP for: ${identifier}`);
 
       // Check if user exists
       const user = await this.userModel.findOne({
-        $or: [
-          { email: identifier },
-          { phoneNumber: identifier },
-        ],
+        $or: [{ email: identifier }, { phoneNumber: identifier }],
       });
 
       if (!user) {
@@ -510,7 +595,10 @@ export class AuthService {
         message: 'OTP sent successfully. Please check your email.',
       };
     } catch (error) {
-      this.logger.error('Error requesting login OTP', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error requesting login OTP',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -518,7 +606,10 @@ export class AuthService {
   /**
    * Change password
    */
-  async changePassword(userId: string, changePasswordDto: ChangePasswordDto): Promise<{ message: string }> {
+  async changePassword(
+    userId: string,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
     try {
       this.logger.log(`Password change request for user: ${userId}`);
 
@@ -534,12 +625,18 @@ export class AuthService {
       );
 
       if (!isCurrentPasswordValid) {
-        throw new CustomValidationError('Current password is incorrect', 'currentPassword');
+        throw new CustomValidationError(
+          'Current password is incorrect',
+          'currentPassword',
+        );
       }
 
       // Hash new password
       const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || '12');
-      const hashedNewPassword = await bcrypt.hash(changePasswordDto.newPassword, saltRounds);
+      const hashedNewPassword = await bcrypt.hash(
+        changePasswordDto.newPassword,
+        saltRounds,
+      );
 
       // Update password
       await this.userModel.findByIdAndUpdate(userId, {
@@ -552,7 +649,10 @@ export class AuthService {
         message: 'Password changed successfully',
       };
     } catch (error) {
-      this.logger.error('Error changing password', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error changing password',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -560,15 +660,20 @@ export class AuthService {
   /**
    * Forgot password
    */
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
+  async forgotPassword(
+    forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<{ message: string }> {
     try {
       this.logger.log(`Password reset request for: ${forgotPasswordDto.email}`);
 
-      const user = await this.userModel.findOne({ email: forgotPasswordDto.email });
+      const user = await this.userModel.findOne({
+        email: forgotPasswordDto.email,
+      });
       if (!user) {
         // Don't reveal if user exists or not for security
         return {
-          message: 'If an account with this email exists, you will receive a password reset link.',
+          message:
+            'If an account with this email exists, you will receive a password reset link.',
         };
       }
 
@@ -593,13 +698,19 @@ export class AuthService {
         );
       }
 
-      this.logger.log(`Password reset email sent to: ${forgotPasswordDto.email}`);
+      this.logger.log(
+        `Password reset email sent to: ${forgotPasswordDto.email}`,
+      );
 
       return {
-        message: 'If an account with this email exists, you will receive a password reset link.',
+        message:
+          'If an account with this email exists, you will receive a password reset link.',
       };
     } catch (error) {
-      this.logger.error('Error processing forgot password', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error processing forgot password',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -607,13 +718,17 @@ export class AuthService {
   /**
    * Reset password
    */
-  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
+  async resetPassword(
+    resetPasswordDto: ResetPasswordDto,
+  ): Promise<{ message: string }> {
     try {
       this.logger.log(`Password reset attempt with token`);
 
       // Verify token
-      const payload = this.jwtService.verify(resetPasswordDto.token) as JwtPayload;
-      
+      const payload = this.jwtService.verify(
+        resetPasswordDto.token,
+      ) as JwtPayload;
+
       const user = await this.userModel.findOne({
         _id: payload.sub,
         passwordResetToken: resetPasswordDto.token,
@@ -621,12 +736,18 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new CustomValidationError('Invalid or expired reset token', 'token');
+        throw new CustomValidationError(
+          'Invalid or expired reset token',
+          'token',
+        );
       }
 
       // Hash new password
       const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || '12');
-      const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, saltRounds);
+      const hashedPassword = await bcrypt.hash(
+        resetPasswordDto.newPassword,
+        saltRounds,
+      );
 
       // Update password and clear reset token
       await this.userModel.findByIdAndUpdate(user._id, {
@@ -641,7 +762,10 @@ export class AuthService {
         message: 'Password reset successfully',
       };
     } catch (error) {
-      this.logger.error('Error resetting password', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error resetting password',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -689,7 +813,10 @@ export class AuthService {
       }
       return user;
     } catch (error) {
-      this.logger.error('Error validating user', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error validating user',
+        error instanceof Error ? error.stack : String(error),
+      );
       return null;
     }
   }
@@ -712,7 +839,10 @@ export class AuthService {
 
       return this.generateTokens(user);
     } catch (error) {
-      this.logger.error('Error refreshing token', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error refreshing token',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw new UnauthorizedException('Invalid refresh token');
     }
   }

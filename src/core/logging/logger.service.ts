@@ -59,7 +59,13 @@ export class LoggerService implements NestLoggerService {
     this.log(`Request: ${method} ${url}`, context);
   }
 
-  logResponse(method: string, url: string, statusCode: number, duration: number, context?: LogContext): void {
+  logResponse(
+    method: string,
+    url: string,
+    statusCode: number,
+    duration: number,
+    context?: LogContext,
+  ): void {
     this.log(`Response: ${method} ${url} ${statusCode} - ${duration}ms`, {
       ...context,
       duration,

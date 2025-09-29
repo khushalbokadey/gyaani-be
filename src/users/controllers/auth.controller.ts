@@ -1,23 +1,23 @@
-import { 
-  Controller, 
-  Post, 
-  Body, 
-  Get, 
-  UseGuards, 
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
   Req,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { OtpService } from '../services/otp.service';
-import { 
-  RegisterDto, 
+import {
+  RegisterDto,
   PhoneRegisterDto,
   PhoneLoginDto,
-  LoginDto, 
-  LoginWithOtpDto, 
-  ChangePasswordDto, 
-  ForgotPasswordDto, 
+  LoginDto,
+  LoginWithOtpDto,
+  ChangePasswordDto,
+  ForgotPasswordDto,
   ResetPasswordDto,
   RequestOtpDto,
   VerifyOtpDto,
@@ -49,7 +49,7 @@ export class AuthController {
     };
 
     const result = await this.authService.register(registerDto, metadata);
-    
+
     return {
       success: true,
       data: result,
@@ -73,8 +73,11 @@ export class AuthController {
       userAgent: req.headers['user-agent'],
     };
 
-    const result = await this.authService.registerWithPhone(registerDto, metadata);
-    
+    const result = await this.authService.registerWithPhone(
+      registerDto,
+      metadata,
+    );
+
     return {
       success: true,
       data: result,
@@ -93,7 +96,7 @@ export class AuthController {
     @Body() loginDto: PhoneLoginDto,
   ): Promise<ApiResponse<any>> {
     const result = await this.authService.loginWithPhone(loginDto);
-    
+
     return {
       success: true,
       data: result,
@@ -111,8 +114,11 @@ export class AuthController {
   async verifyPhone(
     @Body() body: { phoneNumber: string; otpCode: string },
   ): Promise<ApiResponse<{ user: User; message: string }>> {
-    const result = await this.authService.verifyPhone(body.phoneNumber, body.otpCode);
-    
+    const result = await this.authService.verifyPhone(
+      body.phoneNumber,
+      body.otpCode,
+    );
+
     return {
       success: true,
       data: result,
@@ -136,8 +142,11 @@ export class AuthController {
       userAgent: req.headers['user-agent'],
     };
 
-    const result = await this.authService.requestPhoneLoginOtp(body.phoneNumber, metadata);
-    
+    const result = await this.authService.requestPhoneLoginOtp(
+      body.phoneNumber,
+      metadata,
+    );
+
     return {
       success: true,
       data: result,
@@ -152,11 +161,9 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(
-    @Body() loginDto: LoginDto,
-  ): Promise<ApiResponse<any>> {
+  async login(@Body() loginDto: LoginDto): Promise<ApiResponse<any>> {
     const result = await this.authService.login(loginDto);
-    
+
     return {
       success: true,
       data: result,
@@ -175,7 +182,7 @@ export class AuthController {
     @Body() loginDto: LoginWithOtpDto,
   ): Promise<ApiResponse<any>> {
     const result = await this.authService.loginWithOtp(loginDto);
-    
+
     return {
       success: true,
       data: result,
@@ -199,8 +206,11 @@ export class AuthController {
       userAgent: req.headers['user-agent'],
     };
 
-    const result = await this.authService.requestLoginOtp(body.identifier, metadata);
-    
+    const result = await this.authService.requestLoginOtp(
+      body.identifier,
+      metadata,
+    );
+
     return {
       success: true,
       data: result,
@@ -218,8 +228,11 @@ export class AuthController {
   async verifyEmail(
     @Body() body: { identifier: string; otpCode: string },
   ): Promise<ApiResponse<{ user: User; message: string }>> {
-    const result = await this.authService.verifyEmail(body.identifier, body.otpCode);
-    
+    const result = await this.authService.verifyEmail(
+      body.identifier,
+      body.otpCode,
+    );
+
     return {
       success: true,
       data: result,
@@ -238,7 +251,7 @@ export class AuthController {
     @Body() forgotPasswordDto: ForgotPasswordDto,
   ): Promise<ApiResponse<{ message: string }>> {
     const result = await this.authService.forgotPassword(forgotPasswordDto);
-    
+
     return {
       success: true,
       data: result,
@@ -257,7 +270,7 @@ export class AuthController {
     @Body() resetPasswordDto: ResetPasswordDto,
   ): Promise<ApiResponse<{ message: string }>> {
     const result = await this.authService.resetPassword(resetPasswordDto);
-    
+
     return {
       success: true,
       data: result,
@@ -276,8 +289,11 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto,
     @CurrentUser() user: User,
   ): Promise<ApiResponse<{ message: string }>> {
-    const result = await this.authService.changePassword(user._id.toString(), changePasswordDto);
-    
+    const result = await this.authService.changePassword(
+      user._id.toString(),
+      changePasswordDto,
+    );
+
     return {
       success: true,
       data: result,
@@ -296,7 +312,7 @@ export class AuthController {
     @Body() body: { refreshToken: string },
   ): Promise<ApiResponse<any>> {
     const result = await this.authService.refreshToken(body.refreshToken);
-    
+
     return {
       success: true,
       data: result,
@@ -310,9 +326,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async getProfile(
-    @CurrentUser() user: User,
-  ): Promise<ApiResponse<User>> {
+  async getProfile(@CurrentUser() user: User): Promise<ApiResponse<User>> {
     return {
       success: true,
       data: user,
@@ -345,7 +359,10 @@ export class AuthController {
     );
 
     // Send OTP via email (in production, also send via SMS for phone verification)
-    if (requestOtpDto.type === 'email_verification' || requestOtpDto.type === 'login') {
+    if (
+      requestOtpDto.type === 'email_verification' ||
+      requestOtpDto.type === 'login'
+    ) {
       // This would be handled by the email service
       // For now, we'll just return success
     }

@@ -9,7 +9,10 @@ async function bootstrap() {
   try {
     validateEnvironment();
   } catch (error) {
-    console.error('Environment validation failed:', error instanceof Error ? error.message : String(error));
+    console.error(
+      'Environment validation failed:',
+      error instanceof Error ? error.message : String(error),
+    );
     process.exit(1);
   }
 
@@ -44,7 +47,9 @@ async function bootstrap() {
   logger.log(`Health check available at: http://localhost:${port}/api/health`);
   logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.log(`JWT Secret configured: ${process.env.JWT_SECRET ? 'Yes' : 'No'}`);
-  logger.log(`Database URI configured: ${process.env.MONGODB_URI ? 'Yes' : 'No'}`);
+  logger.log(
+    `Database URI configured: ${process.env.MONGODB_URI ? 'Yes' : 'No'}`,
+  );
 }
 
 bootstrap().catch((error) => {

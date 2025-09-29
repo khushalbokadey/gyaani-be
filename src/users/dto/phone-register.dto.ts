@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, MinLength, MaxLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  MinLength,
+  MaxLength,
+  Matches,
+} from 'class-validator';
 import { UserRole } from '../schemas/user.schema';
 
 export class PhoneRegisterDto {
@@ -16,7 +24,9 @@ export class PhoneRegisterDto {
 
   @IsString()
   @IsNotEmpty({ message: 'Phone number is required' })
-  @Matches(/^\+?[1-9]\d{1,14}$/, { message: 'Please provide a valid phone number' })
+  @Matches(/^\+?[1-9]\d{1,14}$/, {
+    message: 'Please provide a valid phone number',
+  })
   phoneNumber!: string;
 
   @IsOptional()
@@ -25,6 +35,8 @@ export class PhoneRegisterDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(500, { message: 'Profile image URL must not exceed 500 characters' })
+  @MaxLength(500, {
+    message: 'Profile image URL must not exceed 500 characters',
+  })
   profileImage?: string;
 }

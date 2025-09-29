@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { TopicsService } from './topics.service';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
@@ -9,7 +17,9 @@ export class TopicsController {
   constructor(private readonly topicsService: TopicsService) {}
 
   @Post()
-  async create(@Body() createTopicDto: CreateTopicDto): Promise<ApiResponse<any>> {
+  async create(
+    @Body() createTopicDto: CreateTopicDto,
+  ): Promise<ApiResponse<any>> {
     const topic = await this.topicsService.create(createTopicDto);
     return {
       success: true,
@@ -51,7 +61,10 @@ export class TopicsController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateTopicDto: UpdateTopicDto): Promise<ApiResponse<any>> {
+  async update(
+    @Param('id') id: string,
+    @Body() updateTopicDto: UpdateTopicDto,
+  ): Promise<ApiResponse<any>> {
     const topic = await this.topicsService.update(id, updateTopicDto);
     return {
       success: true,

@@ -19,9 +19,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const requestId = request.headers['x-request-id'] as string || 
-                     request.headers['x-correlation-id'] as string || 
-                     this.generateRequestId();
+    const requestId =
+      (request.headers['x-request-id'] as string) ||
+      (request.headers['x-correlation-id'] as string) ||
+      this.generateRequestId();
 
     let status: number;
     let errorResponse: ApiResponse<null>;
@@ -40,15 +41,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      
+
       errorResponse = {
         success: false,
         error: {
           code: 'HTTP_EXCEPTION',
-          message: typeof exceptionResponse === 'string' 
-            ? exceptionResponse 
-            : (exceptionResponse as any).message || 'An error occurred',
-          details: typeof exceptionResponse === 'object' ? exceptionResponse : undefined,
+          message:
+            typeof exceptionResponse === 'string'
+              ? exceptionResponse
+              : (exceptionResponse as any).message || 'An error occurred',
+          details:
+            typeof exceptionResponse === 'object'
+              ? exceptionResponse
+              : undefined,
         },
         meta: {
           timestamp: new Date().toISOString(),
@@ -73,17 +78,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // Log the error
-    this.logger.error(
-      `Error ${status}: ${errorResponse.error?.message}`,
-      {
-        requestId,
-        method: request.method,
-        url: request.url,
-        userAgent: request.get('User-Agent'),
-        ip: request.ip,
-        stack: exception instanceof Error ? exception.stack : undefined,
-      }
-    );
+    this.logger.error(`Error ${status}: ${errorResponse.error?.message}`, {
+      requestId,
+      method: request.method,
+      url: request.url,
+      userAgent: request.get('User-Agent'),
+      ip: request.ip,
+      stack: exception instanceof Error ? exception.stack : undefined,
+    });
 
     response.status(status).json(errorResponse);
   }

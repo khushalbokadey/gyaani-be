@@ -74,15 +74,16 @@ export const configuration = (): AppConfig => ({
 
 // Environment validation
 export const validateEnvironment = (): void => {
-  const requiredEnvVars = [
-    'MONGODB_URI',
-    'JWT_SECRET',
-  ];
+  const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
 
-  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-  
+  const missingVars = requiredEnvVars.filter(
+    (varName) => !process.env[varName],
+  );
+
   if (missingVars.length > 0) {
-    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+    throw new Error(
+      `Missing required environment variables: ${missingVars.join(', ')}`,
+    );
   }
 
   // Validate JWT secret strength

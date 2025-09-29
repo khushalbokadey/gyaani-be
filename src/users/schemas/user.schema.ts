@@ -35,17 +35,17 @@ export class User {
   @Prop({ required: true, unique: true })
   phoneNumber!: string;
 
-  @Prop({ 
-    type: String, 
-    enum: UserRole, 
-    default: UserRole.STUDENT 
+  @Prop({
+    type: String,
+    enum: UserRole,
+    default: UserRole.STUDENT,
   })
   role!: UserRole;
 
-  @Prop({ 
-    type: String, 
-    enum: UserStatus, 
-    default: UserStatus.PENDING 
+  @Prop({
+    type: String,
+    enum: UserStatus,
+    default: UserStatus.PENDING,
   })
   status!: UserStatus;
 

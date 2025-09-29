@@ -56,6 +56,20 @@ FRONTEND_PHONE_AUTH_INTEGRATION_GUIDE.md
 ENVIRONMENT_SETUP.md
 Gyaani_Backend_API.postman_collection.json
 
+# Current Affairs documentation
+CURRENT_AFFAIRS_API_ENDPOINTS.md
+CURRENT_AFFAIRS_FRONTEND_INTEGRATION_GUIDE.md
+CURRENT_AFFAIRS_HIGHLIGHTS.md
+
+# Internal documentation files
+src/DOCS.MD
+src/QUESTIONS.MD
+
+# Utility scripts
+check-database.js
+setup.js
+test-phone-auth.js
+
 # temp directory
 .temp
 .tmp

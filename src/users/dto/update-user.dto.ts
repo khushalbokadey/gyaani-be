@@ -1,6 +1,13 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { RegisterDto } from './register.dto';
-import { IsOptional, IsString, IsEnum, IsBoolean, IsObject, IsNotEmpty } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsBoolean,
+  IsObject,
+  IsNotEmpty,
+} from 'class-validator';
 import { UserStatus } from '../schemas/user.schema';
 
 export class UpdateUserDto extends PartialType(RegisterDto) {

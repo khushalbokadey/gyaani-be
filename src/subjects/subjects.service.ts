@@ -24,7 +24,10 @@ export class SubjectsService {
       this.logger.log(`Subject created successfully: ${savedSubject._id}`);
       return savedSubject;
     } catch (error) {
-      this.logger.error('Error creating subject', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error creating subject',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -34,7 +37,10 @@ export class SubjectsService {
       this.logger.log('Fetching all subjects');
       return this.subjectModel.find().exec();
     } catch (error) {
-      this.logger.error('Error fetching subjects', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error fetching subjects',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -43,16 +49,19 @@ export class SubjectsService {
     try {
       this.logger.log('Fetching all subjects with topics');
       const subjects = await this.subjectModel.find().exec();
-      
+
       const subjectsWithTopics = await Promise.all(
         subjects.map(async (subject) => {
-          const topics = await this.topicsService.findBySubject(subject._id.toString());
+          const topics = await this.topicsService.findBySubject(
+            subject._id.toString(),
+          );
           return {
             _id: subject._id,
             name: subject.name,
             color: subject.color,
             totalTopics: topics.length,
-            completedTopics: topics.filter(topic => topic.progress === 100).length,
+            completedTopics: topics.filter((topic) => topic.progress === 100)
+              .length,
             progress: subject.progress,
             description: subject.description,
             lastStudied: subject.lastStudied,
@@ -66,15 +75,18 @@ export class SubjectsService {
               completedLessons: topic.completedLessons,
               totalQuestions: topic.totalQuestions,
               description: topic.description,
-              ...(topic.isLocked && { isLocked: topic.isLocked })
-            }))
+              ...(topic.isLocked && { isLocked: topic.isLocked }),
+            })),
           };
-        })
+        }),
       );
 
       return subjectsWithTopics;
     } catch (error) {
-      this.logger.error('Error fetching subjects with topics', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Error fetching subjects with topics',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -88,7 +100,10 @@ export class SubjectsService {
       }
       return subject;
     } catch (error) {
-      this.logger.error(`Error fetching subject ${id}`, error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        `Error fetching subject ${id}`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -102,7 +117,10 @@ export class SubjectsService {
       }
       return subject;
     } catch (error) {
-      this.logger.error(`Error fetching subject by name ${name}`, error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        `Error fetching subject by name ${name}`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -111,14 +129,16 @@ export class SubjectsService {
     try {
       this.logger.log(`Fetching subject with topics by name: ${name}`);
       const subject = await this.findByName(name);
-      const topics = await this.topicsService.findBySubject(subject._id.toString());
-      
+      const topics = await this.topicsService.findBySubject(
+        subject._id.toString(),
+      );
+
       return {
         id: 1,
         name: subject.name,
         progress: subject.progress,
         totalTopics: topics.length,
-        completedTopics: topics.filter(t => t.progress === 100).length,
+        completedTopics: topics.filter((t) => t.progress === 100).length,
         lastStudied: subject.lastStudied,
         color: subject.color,
         topics: topics.map((topic, index) => ({
@@ -131,26 +151,37 @@ export class SubjectsService {
           completedLessons: topic.completedLessons,
           totalQuestions: topic.totalQuestions,
           description: topic.description,
-          ...(topic.isLocked && { isLocked: topic.isLocked })
-        }))
+          ...(topic.isLocked && { isLocked: topic.isLocked }),
+        })),
       };
     } catch (error) {
-      this.logger.error(`Error fetching subject with topics by name ${name}`, error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        `Error fetching subject with topics by name ${name}`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
 
-  async update(id: string, updateSubjectDto: UpdateSubjectDto): Promise<Subject> {
+  async update(
+    id: string,
+    updateSubjectDto: UpdateSubjectDto,
+  ): Promise<Subject> {
     try {
       this.logger.log(`Updating subject: ${id}`);
-      const subject = await this.subjectModel.findByIdAndUpdate(id, updateSubjectDto, { new: true }).exec();
+      const subject = await this.subjectModel
+        .findByIdAndUpdate(id, updateSubjectDto, { new: true })
+        .exec();
       if (!subject) {
         throw new NotFoundError(`Subject with ID ${id} not found`);
       }
       this.logger.log(`Subject updated successfully: ${id}`);
       return subject;
     } catch (error) {
-      this.logger.error(`Error updating subject ${id}`, error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        `Error updating subject ${id}`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -165,7 +196,10 @@ export class SubjectsService {
       this.logger.log(`Subject removed successfully: ${id}`);
       return subject;
     } catch (error) {
-      this.logger.error(`Error removing subject ${id}`, error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        `Error removing subject ${id}`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
